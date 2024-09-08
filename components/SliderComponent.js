@@ -63,7 +63,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     return (
         <div className="fixed bottom-4 left-4 z-50 w-[80rem] space-y-4">
             <div className="">
-                <div className="h-10 overflow-visible">
+                <div className="my-2 overflow-visible">
                     <div
                         className={`
                             transition-all duration-300 ease-in-out
@@ -73,18 +73,9 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                             }
                         `}
                     >
-                        <div className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 rounded-full w-fit text-sm">
-                            <div 
-                                className="relative"
-                                onMouseEnter={() => setIsTooltipVisible(true)}
-                                onMouseLeave={() => setIsTooltipVisible(false)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
-                                {isTooltipVisible && (
+                        {isTooltipVisible && (
                                     <div 
-                                        className="absolute bottom-full left-0 my-2 bg-white text-black text-bold text-xs italic rounded py-2 px-2 whitespace-nowrap z-10"
+                                        className="absolute bottom-full my-3 bg-white text-black text-bold text-xs italic py-2 px-3 whitespace-nowrap rounded-full"
                                         style={{
                                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                                             maxWidth: '200px',
@@ -94,7 +85,20 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                                         You can enter the depth here
                                     </div>
                                 )}
+                        <div className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 rounded-full w-fit text-sm">
+                        
+                            <div 
+                                className="relative"
+                                onMouseEnter={() => setIsTooltipVisible(true)}
+                                onMouseLeave={() => setIsTooltipVisible(false)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                
                             </div>
+
+                            
                             <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
                             <div className="relative flex items-center">
                                 <input
@@ -103,7 +107,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                                     onChange={handleDepthChange}
                                     min={0}
                                     max={23}
-                                    className="bg-transparent px-2 py-1 text-white w-16 appearance-none"
+                                    className="bg-transparent  py-1 text-white appearance-none"
                                     style={{ '-moz-appearance': 'textfield' }}
                                 />
                                 <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white">m</span>
