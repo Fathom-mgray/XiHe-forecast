@@ -1,0 +1,8 @@
+.map-outlines-labels {
+    filter: grayscale(100%) invert(100%);
+  }
+  
+  .map-outlines-labels .leaflet-tile {
+    border: none !important;
+    background-color: transparent !important;
+  }
