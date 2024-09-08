@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Pane } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import SSTOverlayLayers from './SSTOverlayLayers';
@@ -8,20 +8,29 @@ import './MapStyles.css';
 import SliderComponent from './SliderComponent';
 
 const SSTMap = () => {
-    const [isSSTOverlayVisible, setIsSSTOverlayVisible] = useState(true);
-    const [isSalinityOverlayVisible, setIsSalinityOverlayVisible] = useState(false);
-    const [isThetaOOverlayVisible, setIsThetaOOverlayVisible] = useState(false);
+    const [activeOverlay, setActiveOverlay] = useState('sst');
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [baseDate, setBaseDate] = useState(new Date());
+    const [depth, setDepth] = useState(0);
 
-    const handleDateChange = (newDate) => {
+    const handleDateChange = useCallback((newDate) => {
         setSelectedDate(newDate);
-    };
+    }, []);
 
-    
+    const handleBaseDateChange = useCallback((newDate) => {
+        setBaseDate(newDate);
+    }, []);
 
-    useEffect(() => {
-        console.log('Selected date updated:', selectedDate);
-    }, [selectedDate]);
+    const handleDepthChange = useCallback((newDepth) => {
+        setDepth(newDepth);
+    }, []);
+
+    const changeOverlay = useCallback((overlayType) => {
+        setActiveOverlay(prevOverlay => {
+            console.log('Changing overlay from', prevOverlay, 'to', overlayType);
+            return overlayType;
+        });
+    }, []);
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -41,7 +50,12 @@ const SSTMap = () => {
                         noWrap={true}
                     />
                     <Pane name="data-visualization" style={{ zIndex: 200 }}>
-                        {isSSTOverlayVisible && <SSTOverlayLayers selectedDate={selectedDate} />}
+                        <SSTOverlayLayers 
+                            selectedDate={selectedDate}
+                            baseDate={baseDate}
+                            depth={depth}
+                            activeOverlay={activeOverlay}
+                        />
                     </Pane>
                     <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
                         <TileLayer
@@ -61,20 +75,20 @@ const SSTMap = () => {
                     alignItems: 'flex-end'
                 }}>
                     <ToggleButton 
-                        visible={isSSTOverlayVisible} 
-                        setVisible={setIsSSTOverlayVisible}   
+                        active={activeOverlay === 'sst'}
+                        setActive={() => changeOverlay('sst')}   
                         imageSrc="/images/fire.png" 
                         name="Sea Surface Temperature"
                     />
                     <ToggleButton 
-                        visible={isSalinityOverlayVisible} 
-                        setVisible={setIsSalinityOverlayVisible}   
+                        active={activeOverlay === 'salinity'}
+                        setActive={() => changeOverlay('salinity')}   
                         imageSrc="/images/salt.png" 
                         name="Salinity level"
                     />
                     <ToggleButton 
-                        visible={isThetaOOverlayVisible} 
-                        setVisible={setIsThetaOOverlayVisible}   
+                        active={activeOverlay === 'thetaO'}
+                        setActive={() => changeOverlay('thetaO')}   
                         imageSrc="/images/fire.png" 
                         name="Theta O"
                     />
@@ -88,10 +102,10 @@ const SSTMap = () => {
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                 }}>
-
                 <SliderComponent 
-                    isSalinityOverlayVisible={isSalinityOverlayVisible} 
                     onDateChange={handleDateChange}
+                    onBaseDateChange={handleBaseDateChange}
+                    onDepthChange={handleDepthChange}
                 />
                 </div>
             </div>
@@ -99,4 +113,4 @@ const SSTMap = () => {
     );
 };
 
-export default SSTMap;
+export default React.memo(SSTMap);
