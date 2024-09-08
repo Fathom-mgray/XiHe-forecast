@@ -7,6 +7,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     const [depth, setDepth] = useState(0);
     const [dateLabels, setDateLabels] = useState([]);
     const [showDepth, setShowDepth] = useState(false);
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
     const updateDateLabels = useCallback(() => {
         const labels = Array.from({ length: 10 }, (_, i) => {
@@ -62,7 +63,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     return (
         <div className="fixed bottom-4 left-4 z-50 w-[80rem] space-y-4">
             <div className="">
-                <div className="h-10 overflow-hidden">
+                <div className="h-10 overflow-visible">
                     <div
                         className={`
                             transition-all duration-300 ease-in-out
@@ -73,8 +74,29 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                         `}
                     >
                         <div className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 rounded-full w-fit text-sm">
+                            <div 
+                                className="relative"
+                                onMouseEnter={() => setIsTooltipVisible(true)}
+                                onMouseLeave={() => setIsTooltipVisible(false)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                {isTooltipVisible && (
+                                    <div 
+                                        className="absolute bottom-full left-0 my-2 bg-white text-black text-bold text-xs italic rounded py-2 px-2 whitespace-nowrap z-10"
+                                        style={{
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            maxWidth: '200px',
+                                            width: 'max-content'
+                                        }}
+                                    >
+                                        You can enter the depth here
+                                    </div>
+                                )}
+                            </div>
                             <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
-                            <div className="relative">
+                            <div className="relative flex items-center">
                                 <input
                                     type="number"
                                     value={depth}
@@ -101,7 +123,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                     />
                 </div>
             </div>
-            <div className="bg-black bg-opacity-30 p-2 rounded-full">
+            <div className="mt-2">
                 <Slider
                     defaultValue={[0]}
                     max={13}
@@ -111,7 +133,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                     className="w-full"
                 />
             </div>
-            <div className="flex justify-between text-xs text-white">
+            <div className="flex justify-between text-xs">
                 {dateLabels.map((label, index) => (
                     <span key={index} className={index === sliderValue[0] ? 'font-bold' : ''}>{label}</span>
                 ))}
