@@ -43,11 +43,14 @@ const SSTMap = () => {
                     minZoom={3}
                     maxBounds={[[80, -180], [-75, 180]]}
                     maxBoundsViscosity={1.0}
+                    zoomControl={false}
                 >
                     <TileLayer
                         url='https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
+                        // 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         noWrap={true}
+                        
                     />
                     <Pane name="data-visualization" style={{ zIndex: 200 }}>
                         <SSTOverlayLayers 
@@ -72,7 +75,7 @@ const SSTMap = () => {
                 </MapContainer>
                 <div style={{ 
                     position: 'absolute', 
-                    top: '5rem', 
+                    top: '4rem', 
                     right: '10px', 
                     zIndex: 1000, 
                     display: 'flex', 
@@ -85,17 +88,30 @@ const SSTMap = () => {
                         imageSrc="/images/fire.png" 
                         name="Sea Surface Temperature"
                     />
-                    <ToggleButton 
-                        active={activeOverlay === 'salinity'}
-                        setActive={() => changeOverlay('salinity')}   
-                        imageSrc="/images/salt.png" 
-                        name="Salinity level"
-                    />
+                    
                     <ToggleButton 
                         active={activeOverlay === 'thetaO'}
                         setActive={() => changeOverlay('thetaO')}   
                         imageSrc="/images/fire.png" 
-                        name="Theta O"
+                        name="Potential temperature"
+                    />
+                    <ToggleButton 
+                        active={activeOverlay === 'zos'}
+                        setActive={() => changeOverlay('zos')}   
+                        imageSrc="/images/fire.png" 
+                        name="Sea Surface Height"
+                    />
+                    <ToggleButton 
+                        active={activeOverlay === 'speed'}
+                        setActive={() => changeOverlay('speed')}   
+                        imageSrc="/images/fire.png" 
+                        name="Current speed"
+                    />
+                    <ToggleButton 
+                        active={activeOverlay === 'salinity'}
+                        setActive={() => changeOverlay('salinity')}   
+                        imageSrc="/images/salt.png" 
+                        name="Salinity"
                     />
                 </div>
                 <div style={{

@@ -8,7 +8,7 @@ const NavBar = () => {
             left: 0,
             right: 0,
             zIndex: 1000,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
             padding: '5px 15px',
             display: 'flex',
             justifyContent: 'center',
@@ -21,7 +21,7 @@ const NavBar = () => {
                     alt="Logo"
                     style={{ height: '35px', width: '35px', marginRight: '12px' }}
                 />
-                <span className='text-white' style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                <span className='text-dark' style={{ fontSize: '1rem', fontWeight: 700 }}>
                     FATHOM SCIENCE
                 </span>
             </div>

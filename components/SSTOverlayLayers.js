@@ -25,7 +25,9 @@ const SSTOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
         const overlayTypeMap = {
             sst: 'sst',
             salinity: 'so',
-            thetaO: 'thetao'
+            thetaO: 'thetao',
+            zos: 'zos',
+            speed: 'speed'
         };
         const overlayType = overlayTypeMap[activeOverlay] || 'sst';
         const depthString = `${depth}m`;
