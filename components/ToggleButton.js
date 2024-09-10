@@ -6,7 +6,7 @@ const ToggleButton = ({ active, setActive, imageSrc, name }) => {
             onClick={() => setActive()}
             className="flex items-center justify-between rounded-full py-1 px-1 transition-colors duration-300 my-1 mx-2 w-fit"
             style={{
-                backgroundColor: active ? 'rgba(39, 95, 76,0.5)' : 'rgba(39, 95, 76,0.3)',
+                backgroundColor: active ? 'rgba(0, 0, 0,0.7)' : 'rgba(0, 0,0,0.3)',
                 color: active ? 'rgba(255, 255, 255)' : 'rgba(0, 0, 0)',
             }}
         >

@@ -6,6 +6,8 @@ import ToggleButton from './ToggleButton'
 import NavBar from './Navbar'
 import './MapStyles.css';
 import SliderComponent from './SliderComponent';
+import JSONDataLayer from './JSONDataLayer';
+import CountryBoundariesLayer from './CountryBoundariesLayer';
 
 const SSTMap = () => {
     const [activeOverlay, setActiveOverlay] = useState('sst');
@@ -60,6 +62,11 @@ const SSTMap = () => {
                             activeOverlay={activeOverlay}
                         />
                     </Pane>
+                    <Pane name="country-boundaries" style={{ zIndex: 250 }}>
+                        <CountryBoundariesLayer />
+                    </Pane>
+                    
+
                     <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
                     <TileLayer
                         url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
@@ -71,6 +78,14 @@ const SSTMap = () => {
                             attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             subdomains='abcd'
                         /> */}
+                    </Pane>
+                    <Pane name="json-data" style={{ zIndex: 500 }}>
+                        <JSONDataLayer 
+                            selectedDate={selectedDate}
+                            baseDate={baseDate}
+                            depth={depth}
+                            activeOverlay={activeOverlay}
+                        />
                     </Pane>
                 </MapContainer>
                 <div style={{ 
@@ -92,19 +107,19 @@ const SSTMap = () => {
                     <ToggleButton 
                         active={activeOverlay === 'thetaO'}
                         setActive={() => changeOverlay('thetaO')}   
-                        imageSrc="/images/fire.png" 
+                        imageSrc="/images/potential_temp.png" 
                         name="Potential temperature"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'zos'}
                         setActive={() => changeOverlay('zos')}   
-                        imageSrc="/images/fire.png" 
+                        imageSrc="/images/sea_surface.png" 
                         name="Sea Surface Height"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'speed'}
                         setActive={() => changeOverlay('speed')}   
-                        imageSrc="/images/fire.png" 
+                        imageSrc="/images/wind.png" 
                         name="Current speed"
                     />
                     <ToggleButton 

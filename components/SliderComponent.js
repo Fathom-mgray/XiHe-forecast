@@ -137,7 +137,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 rounded-full w-fit text-sm" style={{backgroundColor:'rgba(39, 95, 76,0.5)'}}>
+                <div className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 rounded-full w-fit text-sm">
                     <span className="text-white font-semibold whitespace-nowrap">Base Date:</span>
                     <input
                         type="date"
