@@ -1,18 +1,35 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useMapEvents, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useMapEvents, Popup, useMap, CircleMarker } from 'react-leaflet';
 
-const JSONDataLayer = () => {
+const JSONDataLayer = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     const [jsonData, setJsonData] = useState(null);
     const [error, setError] = useState(null);
     const [clickedPoint, setClickedPoint] = useState(null);
-    const [showCircle, setShowCircle] = useState(false);
     const popupRef = useRef(null);
     const map = useMap();
 
-    // Function to fetch the JSON data
     const fetchJSONData = useCallback(async () => {
         try {
-            const response = await fetch('http://127.0.0.1:5000/get-json-data');
+            const urlDate = new Date(baseDate);
+            urlDate.setDate(urlDate.getDate() - 1);
+            const urlDateString = urlDate.toISOString().split('T')[0].replace(/-/g, '');
+
+            const leadDays = Math.floor((selectedDate - baseDate) / (1000 * 60 * 60 * 24)) + 1;
+            const leadString = leadDays.toString().padStart(2, '0');
+
+            const overlayTypeMap = {
+                sst: 'sst',
+                salinity: 'so',
+                thetaO: 'thetao',
+                zos: 'zos',
+                speed: 'speed'
+            };
+            const overlayType = overlayTypeMap[activeOverlay] || 'sst';
+            const depthString = `${depth}m`;
+
+            const url = `http://127.0.0.1:5000/get-json-data?file=XiHe_model_outputs/temp_outputs/${urlDateString}_lead${leadString}_${overlayType}_${depthString}.json`;
+            
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -32,10 +49,14 @@ const JSONDataLayer = () => {
             setJsonData(null);
             setError(`Failed to fetch data: ${error.message}`);
         }
-    }, []);
+    }, [selectedDate, baseDate, depth, activeOverlay]);
 
     useEffect(() => {
         fetchJSONData();
+        setClickedPoint(null);
+        if (popupRef.current && popupRef.current._source) {
+            popupRef.current._source.remove();
+        }
     }, [fetchJSONData]);
 
     const findNearestPoint = useCallback((lat, lng) => {
@@ -86,11 +107,8 @@ const JSONDataLayer = () => {
     }, [jsonData]);
 
     const handleMapClick = useCallback((e) => {
-        // Check if the click event originated from a UI control or if it's a synthetic event
-        if (e.originalEvent && e.originalEvent.synthetic) {
-            return;
-        }
-
+        if (e.originalEvent && e.originalEvent.synthetic) return;
+        
         const isUIControl = e.originalEvent && (
             e.originalEvent.target.closest('.leaflet-control') ||
             e.originalEvent.target.closest('button') ||
@@ -98,27 +116,24 @@ const JSONDataLayer = () => {
             e.originalEvent.target.closest('.custom-ui-element')
         );
 
-        if (isUIControl) {
-            return;
-        }
+        if (isUIControl) return;
 
         const { lat, lng } = e.latlng;
         const nearestPoint = findNearestPoint(lat, lng);
         if (nearestPoint) {
-            setClickedPoint(nearestPoint);
-            setShowCircle(true);
-            
-            // Open popup programmatically
+            setClickedPoint({...nearestPoint, clickLat: lat, clickLng: lng});
             if (popupRef.current) {
                 popupRef.current.openOn(map);
             }
-
-            // Set a timeout to hide the circle after 500ms
-            setTimeout(() => {
-                setShowCircle(false);
-            }, 500);
         }
     }, [findNearestPoint, map]);
+
+    const handleClosePopup = () => {
+        setClickedPoint(null);
+        if (popupRef.current && popupRef.current._source) {
+            popupRef.current._source.remove();
+        }
+    };
 
     useMapEvents({
         click: handleMapClick,
@@ -130,21 +145,36 @@ const JSONDataLayer = () => {
 
     return clickedPoint ? (
         <>
-            {showCircle && (
-                <CircleMarker 
-                    center={[clickedPoint.lat, clickedPoint.lng]}
-                    pathOptions={{ fillColor: 'white', fillOpacity: 1, color: 'white', weight: 2 }}
-                    radius={5}
-                />
-            )}
+            <CircleMarker 
+                center={[clickedPoint.clickLat, clickedPoint.clickLng]}
+                radius={4}
+                pathOptions={{ fillColor: 'black', fillOpacity: 1, color: 'black', weight: 1 }}
+            />
             <Popup
-                position={[clickedPoint.lat, clickedPoint.lng]}
+                position={[clickedPoint.clickLat, clickedPoint.clickLng]}
                 ref={popupRef}
+                closeButton={false}
+                offset={[0, 0]}
+                className="custom-popup"
             >
-                <div>
-                    <p>Latitude: {clickedPoint.lat.toFixed(4)}</p>
-                    <p>Longitude: {clickedPoint.lng.toFixed(4)}</p>
-                    <p style={{fontSize:'1rem', fontWeight:'bold'}}>Value: {clickedPoint.value === 'nan' || clickedPoint.value === 'N/A' ? 'N/A' : Number(clickedPoint.value).toFixed(4)}</p>
+                <div className="relative">
+                    <button 
+                        onClick={handleClosePopup}
+                        className="absolute top-0 right-0 bg-black bg-opacity-50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        style={{ transform: 'translate(50%, -50%)' }}
+                    >
+                        ×
+                    </button>
+                    <div className="flex items-start">
+                        <div className="flex flex-col text-[10px] text-white mr-1 px-1 py-0.5">
+                            <div>{clickedPoint.lat.toFixed(2)}</div>
+                            <div>{clickedPoint.lng.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-black w-[2px] h-[80px]"></div>
+                        <div className="left-0 bg-black bg-opacity-50 text-white text-lg font-semibold ">
+                            {clickedPoint.value === 'nan' || clickedPoint.value === 'N/A' ? 'N/A' : Number(clickedPoint.value).toFixed(2)}
+                        </div>
+                    </div>
                 </div>
             </Popup>
         </>
