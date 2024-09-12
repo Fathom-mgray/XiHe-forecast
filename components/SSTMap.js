@@ -62,9 +62,9 @@ const SSTMap = () => {
                             activeOverlay={activeOverlay}
                         />
                     </Pane>
-                    <Pane name="country-boundaries" style={{ zIndex: 250 }}>
+                    {/* <Pane name="country-boundaries" style={{ zIndex: 250 }}>
                         <CountryBoundariesLayer />
-                    </Pane>
+                    </Pane> */}
                     
 
                     <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>

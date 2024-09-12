@@ -1,0 +1,24 @@
+# Dockerfile.backend
+
+FROM python:3.10-slim
+
+# Set environment variables for Flask
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=production
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Flask app code
+COPY app.py ./
+COPY .env ./
+
+# Expose the Flask port
+EXPOSE 5000
+
+# Run the Flask application
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

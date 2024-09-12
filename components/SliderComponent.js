@@ -86,8 +86,15 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
         return minDate.toISOString().split('T')[0];
     };
 
+    // New function to format date labels more consistently
+    const formatDateLabel = (date) => {
+        const day = date.getDate();
+        const month = date.toLocaleString('en-US', { month: 'short' });
+        return `${month}\n${day}`;
+    };
+
     return (
-        <div className="fixed bottom-4 left-4 z-50 w-[85rem] space-y-4">
+        <div className="fixed bottom-5 left-4 z-50 w-[85rem] space-y-4">
             <div className="">
                 <div className="my-2 overflow-visible">
                     <div
@@ -152,7 +159,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
             <div className="mt-2 flex items-center space-x-4">
                 <button
                     onClick={togglePlay}
-                    className="hover:bg-opacity-30 text-white rounded-full p-2 transition-colors duration-200 mb-4"
+                    className="hover:bg-opacity-30 text-white rounded-full p-2 transition-colors duration-200 mb-2"
                     style={{backgroundColor:'rgba(13, 38, 57,0.7)'}}
                 >
                     {isPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -166,21 +173,28 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                         onValueChange={handleSliderChange}
                         className="w-full"
                     />
-                    <div className="relative w-full mt-4">
+                    <div className="relative w-full mt-2">
                         <div className="flex justify-between absolute w-full" style={{ left: '0.5%', right: '0.5%' }}>
-                            {dateLabels.map((label, index) => (
-                                <span 
-                                    key={index} 
-                                    className={`text-xs ${index === sliderValue[0] ? 'font-bold' : ''}`}
-                                    style={{ 
-                                        position: 'absolute', 
-                                        left: `${(index / 9) * 100}%`, 
-                                        transform: 'translateX(-50%)' 
-                                    }}
-                                >
-                                    {label}
-                                </span>
-                            ))}
+                            {dateLabels.map((label, index) => {
+                                const date = new Date(baseDate);
+                                date.setDate(date.getDate() + index);
+                                return (
+                                    <div 
+                                        key={index} 
+                                        className={`text-xs ${index === sliderValue[0] ? 'font-bold' : ''} text-center`}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            left: `${(index / 9) * 100}%`, 
+                                            transform: 'translateX(-50%)',
+                                            width: '40px',  // Fixed width for consistency
+                                        }}
+                                    >
+                                        {formatDateLabel(date).split('\n').map((part, i) => (
+                                            <div key={i}>{part}</div>
+                                        ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
