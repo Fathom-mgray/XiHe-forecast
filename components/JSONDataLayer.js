@@ -139,6 +139,30 @@ const JSONDataLayer = ({ selectedDate, baseDate, depth, activeOverlay }) => {
         click: handleMapClick,
     });
 
+    const getUnitByOverlay = (overlay) => {
+        switch (overlay) {
+            case 'sst':
+            case 'thetaO':
+                return '°C';
+            case 'salinity':
+                return 'PSU';
+            case 'zos':
+                return 'm';
+            case 'speed':
+                return 'm/s';
+            default:
+                return '';
+        }
+    };
+
+    const formatValue = (value, unit) => {
+        if (value === 'nan' || value === 'N/A') {
+            return 'N/A';
+        }
+        const formattedValue = Number(value).toFixed(2);
+        return `${formattedValue} ${unit}`;
+    };
+
     if (error) {
         return <div>Error: {error}</div>;
     }
@@ -154,7 +178,7 @@ const JSONDataLayer = ({ selectedDate, baseDate, depth, activeOverlay }) => {
                 position={[clickedPoint.clickLat, clickedPoint.clickLng]}
                 ref={popupRef}
                 closeButton={false}
-                offset={[0, 0]}
+                offset={[64, 17]}
                 className="custom-popup"
             >
                 <div className="relative">
@@ -170,9 +194,9 @@ const JSONDataLayer = ({ selectedDate, baseDate, depth, activeOverlay }) => {
                             <div>{clickedPoint.lat.toFixed(2)}</div>
                             <div>{clickedPoint.lng.toFixed(2)}</div>
                         </div>
-                        <div className="bg-black w-[2px] h-[80px]"></div>
+                        <div className="bg-black w-[2px] h-[110px]"></div>
                         <div className="left-0 bg-black bg-opacity-50 text-white text-lg font-semibold ">
-                            {clickedPoint.value === 'nan' || clickedPoint.value === 'N/A' ? 'N/A' : Number(clickedPoint.value).toFixed(2)}
+                            <div className='mx-10'>{formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}</div>
                         </div>
                     </div>
                 </div>
