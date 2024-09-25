@@ -1,19 +1,113 @@
-import React, { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Pane } from 'react-leaflet';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { MapContainer, TileLayer, Pane, Rectangle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import SSTOverlayLayers from './SSTOverlayLayers';
-import ToggleButton from './ToggleButton'
-import NavBar from './Navbar'
-import './MapStyles.css';
+import WMSOverlayLayers from './WMSOverlayLayers';
+import TemperatureDataHandler from './TemperatureDataHandler';
+import ToggleButton from './ToggleButton';
+import NavBar from './Navbar';
 import SliderComponent from './SliderComponent';
-import JSONDataLayer from './JSONDataLayer';
-import CountryBoundariesLayer from './CountryBoundariesLayer';
+import RegionSelector from './RegionSelector';
+import LegendComponent from './LegendComponent';
+import OceanCurrentLayer from './OceanCurrentLayer';
+import ToggleableRegionSelector from './ToggleableRegionSelector';
+import './MapStyles.css';
+import MapStyleSelector from './MapStyleSelector';
+import InitialModal from './InitialModal';
+
+
+// Wrapper component to get access to the map instance
+const OceanCurrentLayerWrapper = () => {
+  const map = useMap();
+  return <OceanCurrentLayer map={map} />;
+};
 
 const SSTMap = () => {
+    const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
+    const [showOceanCurrents, setShowOceanCurrents] = useState(false);
+    const [showModal, setShowModal] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [baseDate, setBaseDate] = useState(new Date());
     const [depth, setDepth] = useState(0);
+    const [selectedRegion, setSelectedRegion] = useState(null);
+    const [isZooming, setIsZooming] = useState(false);
+    const [selectedMapLayer, setSelectedMapLayer] = useState('default');
+    const [showInitialModal, setShowInitialModal] = useState(true);
+    const [initialCenter, setInitialCenter] = useState([25, -90]);
+    const [initialZoom, setInitialZoom] = useState(3);
+    const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
+
+
+    // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const mapRef = useRef(null);
+
+
+
+
+    const mapLayers = {
+        default: {
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}',
+            attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service'
+        },
+        light: {
+            url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            
+        },
+        dark: {
+            url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            
+        }
+    };
+
+    const handleInitialModalSubmit = useCallback(({ north, south, east, west, date }) => {
+        console.log("Modal submitted with:", { north, south, east, west, date });
+        const newSelectedDate = new Date(date);
+        setSelectedDate(newSelectedDate);
+        setBaseDate(newSelectedDate);
+        console.log("Modal submitted with date:", baseDate, selectedDate);
+
+        if (north && south && east && west) {
+            const bounds = [
+                [parseFloat(south), parseFloat(west)],
+                [parseFloat(north), parseFloat(east)]
+            ];
+            setSelectedRegion(bounds);
+            const centerLat = (parseFloat(north) + parseFloat(south)) / 2;
+            const centerLon = (parseFloat(east) + parseFloat(west)) / 2;
+            setInitialCenter([centerLat, centerLon]);
+            setInitialZoom(4); // You can adjust this value as needed
+        }
+
+        setIsInitialSetupDone(true);
+        setShowInitialModal(false);
+    }, []);
+
+    const handleCloseInitialModal = useCallback(() => {
+        console.log("Modal closed without submission");
+        setIsInitialSetupDone(true);
+        setShowInitialModal(false);
+    }, []);
+
+    useEffect(() => {
+        console.log("showInitialModal:", showInitialModal);
+        console.log("isInitialSetupDone:", isInitialSetupDone);
+    }, [showInitialModal, isInitialSetupDone]);
+
+
+    const handleMapLayerChange = useCallback((value) => {
+        setSelectedMapLayer(value);
+    }, []);
+
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+    };
+
+
+    const handleCloseModal = useCallback(() => {
+        setShowModal(false);
+    }, []);
 
     const handleDateChange = useCallback((newDate) => {
         setSelectedDate(newDate);
@@ -34,60 +128,130 @@ const SSTMap = () => {
         });
     }, []);
 
+    const toggleOceanCurrents = useCallback(() => {
+        setShowOceanCurrents(prev => !prev);
+    }, []);
+
+    const handleRegionSelect = useCallback(({ north, south, east, west }) => {
+        if (north && south && east && west) {
+            const bounds = [
+                [parseFloat(south), parseFloat(west)],
+                [parseFloat(north), parseFloat(east)]
+            ];
+            console.log("Setting selected region:", bounds);
+            setSelectedRegion(bounds);
+            if (mapRef.current) {
+                const map = mapRef.current;
+                setIsZooming(true);
+                map.flyToBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 4,
+                    duration: 1,
+                    easeLinearity: 0.8
+                });
+            }
+        } else {
+            setSelectedRegion(null);
+        }
+    }, []);
+
+
+    useEffect(() => {
+        if (mapRef.current) {
+            const map = mapRef.current;
+            const handleMoveEnd = () => {
+                console.log("Move ended, setting isZooming to false");
+                setIsZooming(false);
+            };
+            map.on('moveend', handleMoveEnd);
+            return () => map.off('moveend', handleMoveEnd);
+        }
+    }, []);
+
+    useEffect(() => {
+        console.log("Selected Region:", selectedRegion);
+        console.log("Is Zooming:", isZooming);
+    }, [selectedRegion, isZooming]);
+
+    const renderRectangle = useCallback(() => {
+        if (selectedRegion) {
+            console.log("Rendering rectangle with bounds:", selectedRegion);
+            return (
+                <Pane name="region-box" style={{ zIndex: 600 }}>
+                    <Rectangle 
+                        bounds={selectedRegion} 
+                        pathOptions={{ 
+                            color: 'black', 
+                            weight: 2, 
+                            opacity: 0.5, 
+                            fill: false 
+                        }} 
+                    />
+                </Pane>
+            );
+        }
+        return null;
+    }, [selectedRegion]);
+
+
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
             <NavBar />
             <div style={{ flexGrow: 1, position: 'relative' }}>
-                <MapContainer 
-                    center={[25, -90]}
-                    zoom={3}
+            {isInitialSetupDone && (
+            <MapContainer 
+                    center={initialCenter}
+                    zoom={initialZoom}
                     style={{ height: "100vh", width: "100%" }}
-                    minZoom={3}
+                    minZoom={2}
                     maxBounds={[[80, -180], [-75, 180]]}
                     maxBoundsViscosity={1.0}
                     zoomControl={false}
+                    ref={mapRef}
                 >
                     <TileLayer
-                        url='https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
-                        // 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        noWrap={true}
-                        
+                        url={mapLayers[selectedMapLayer].url}
+                        attribution={mapLayers[selectedMapLayer].attribution}
+                        // subdomains={mapLayers[selectedMapLayer].subdomains}
                     />
-                    <Pane name="data-visualization" style={{ zIndex: 200 }}>
-                        <SSTOverlayLayers 
+                    <Pane name="data-visualization" style={{ zIndex: 300 }}>
+                        <WMSOverlayLayers 
                             selectedDate={selectedDate}
                             baseDate={baseDate}
                             depth={depth}
                             activeOverlay={activeOverlay}
                         />
                     </Pane>
-                    {/* <Pane name="country-boundaries" style={{ zIndex: 250 }}>
-                        <CountryBoundariesLayer />
-                    </Pane> */}
-                    
-
                     <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
-                    <TileLayer
-                        url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        noWrap={true}
-                    />
-                        {/* <TileLayer
-                            url="https://stamen-tiles-{s}.a.ssl.fastly.net/toner-hybrid/{z}/{x}/{y}{r}.png"
-                            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            subdomains='abcd'
-                        /> */}
-                    </Pane>
-                    <Pane name="json-data" style={{ zIndex: 500 }}>
-                        <JSONDataLayer 
-                            selectedDate={selectedDate}
-                            baseDate={baseDate}
-                            depth={depth}
-                            activeOverlay={activeOverlay}
+                        <TileLayer
+                            url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         />
                     </Pane>
+                    {/* <Pane name="temperature-data" style={{ zIndex: 500 }}>
+                        <TemperatureDataHandler 
+                        selectedDate={selectedDate}
+                        baseDate={baseDate}
+                        depth={depth}
+                        activeOverlay={activeOverlay}
+                        />
+                    </Pane> */}
+                    {showOceanCurrents && <OceanCurrentLayerWrapper />}
+                    {renderRectangle()}
                 </MapContainer>
+                )}
+                <div style={{ 
+                    position: 'absolute', 
+                    top: '4rem', 
+                    left: '10px', 
+                    zIndex: 1000
+                }}>
+                    <MapStyleSelector 
+                        selectedMapLayer={selectedMapLayer}
+                        handleMapLayerChange={handleMapLayerChange}
+                    />
+                </div>
+                
                 <div style={{ 
                     position: 'absolute', 
                     top: '4rem', 
@@ -103,10 +267,9 @@ const SSTMap = () => {
                         imageSrc="/images/fire.png" 
                         name="Sea Surface Temperature"
                     />
-                    
                     <ToggleButton 
-                        active={activeOverlay === 'thetaO'}
-                        setActive={() => changeOverlay('thetaO')}   
+                        active={activeOverlay === 'thetao'}
+                        setActive={() => changeOverlay('thetao')}   
                         imageSrc="/images/potential_temp.png" 
                         name="Potential temperature"
                     />
@@ -123,28 +286,53 @@ const SSTMap = () => {
                         name="Current speed"
                     />
                     <ToggleButton 
-                        active={activeOverlay === 'salinity'}
-                        setActive={() => changeOverlay('salinity')}   
+                        active={activeOverlay === 'so'}
+                        setActive={() => changeOverlay('so')}   
                         imageSrc="/images/salt.png" 
                         name="Salinity"
                     />
+                    <ToggleableRegionSelector onRegionSelect={handleRegionSelect} />
                 </div>
+                
                 <div style={{
                     position: 'absolute',
-                    bottom: '20px',
+                    bottom: '0px',
                     left: '20px',
                     zIndex: 1000,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                 }}>
-                <SliderComponent 
-                    onDateChange={handleDateChange}
-                    onBaseDateChange={handleBaseDateChange}
-                    onDepthChange={handleDepthChange}
-                    activeOverlay={activeOverlay}
-                />
+                    <SliderComponent 
+                        onDateChange={handleDateChange}
+                        onBaseDateChange={handleBaseDateChange}
+                        onDepthChange={handleDepthChange}
+                        activeOverlay={activeOverlay}
+                        baseDate={baseDate}
+                        selectedDate={selectedDate}
+
+                    />
                 </div>
+
+                <div style={{
+                    position: 'absolute',
+                    bottom: '0px',
+                    right: '2px',
+                    zIndex: 1000,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                }}>
+                    {/* <RegionSelector onRegionSelect={handleRegionSelect} /> */}
+                    <div style={{ marginTop: '10px' }}>
+                        <LegendComponent activeOverlay={activeOverlay} />
+                    </div>
+                </div>
+                <InitialModal
+                    isOpen={showInitialModal}
+                    onClose={handleCloseInitialModal}
+                    onSubmit={handleInitialModalSubmit}
+                />
             </div>
         </div>
     );

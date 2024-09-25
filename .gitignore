@@ -35,3 +35,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# Python-related
+__pycache__/
+*.py[cod]
+
+# Docker-related
+*.log
+
+# IDE-specific (if you're using any)
+.vscode/
+.idea/

@@ -17,7 +17,7 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: Montserrat, sans-serif;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -30,6 +30,12 @@ html, body, #__next {
   padding: 0;
 }
 
+.leaflet-control-attribution {
+  font-size:7px;  /* Make the text smaller */
+  background: none;  /* Remove the background */
+  color: black;  /* Change text color to black */
+  opacity: 0.3;  /* Optional: Reduce opacity for subtler appearance */
+}
 /* #map {
   height: 80vh;
   width: 100vw;

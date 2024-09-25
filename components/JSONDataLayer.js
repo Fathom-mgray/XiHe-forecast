@@ -27,7 +27,7 @@ const JSONDataLayer = ({ selectedDate, baseDate, depth, activeOverlay }) => {
             const overlayType = overlayTypeMap[activeOverlay] || 'sst';
             const depthString = `${depth}m`;
 
-            const url = `http://98.80.9.17:5000/get-json-data?file=XiHe_model_outputs/temp_outputs/${urlDateString}_lead${leadString}_${overlayType}_${depthString}.json`;
+            const url = `http://127.0.0.1:5000/get-json-data?file=XiHe_model_outputs/temp_outputs/${urlDateString}_lead${leadString}_${overlayType}_${depthString}.json`;
             
             const response = await fetch(url);
             if (!response.ok) {
