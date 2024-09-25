@@ -8,7 +8,6 @@ import NavBar from './Navbar';
 import SliderComponent from './SliderComponent';
 import RegionSelector from './RegionSelector';
 import LegendComponent from './LegendComponent';
-import OceanCurrentLayer from './OceanCurrentLayer';
 import ToggleableRegionSelector from './ToggleableRegionSelector';
 import './MapStyles.css';
 import MapStyleSelector from './MapStyleSelector';
@@ -16,15 +15,11 @@ import InitialModal from './InitialModal';
 
 
 // Wrapper component to get access to the map instance
-const OceanCurrentLayerWrapper = () => {
-  const map = useMap();
-  return <OceanCurrentLayer map={map} />;
-};
+
 
 const SSTMap = () => {
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
-    const [showOceanCurrents, setShowOceanCurrents] = useState(false);
     const [showModal, setShowModal] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [baseDate, setBaseDate] = useState(new Date());
@@ -128,9 +123,6 @@ const SSTMap = () => {
         });
     }, []);
 
-    const toggleOceanCurrents = useCallback(() => {
-        setShowOceanCurrents(prev => !prev);
-    }, []);
 
     const handleRegionSelect = useCallback(({ north, south, east, west }) => {
         if (north && south && east && west) {
@@ -236,7 +228,7 @@ const SSTMap = () => {
                         activeOverlay={activeOverlay}
                         />
                     </Pane> */}
-                    {showOceanCurrents && <OceanCurrentLayerWrapper />}
+                
                     {renderRectangle()}
                 </MapContainer>
                 )}
