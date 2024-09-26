@@ -1,18 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Maximize } from 'lucide-react';
 
-const RegionSelector = React.memo(({ onRegionSelect }) => {
+const RegionSelector = React.memo(({ onRegionSelect, onZoomToRegion }) => {
     const [north, setNorth] = useState('');
     const [south, setSouth] = useState('');
     const [east, setEast] = useState('');
     const [west, setWest] = useState('');
 
-    const handleZoomToRegion = useCallback((e) => {
-        e.preventDefault(); // Prevent form submission
+    useEffect(() => {
         if (north && south && east && west) {
             onRegionSelect({ north, south, east, west });
         }
     }, [north, south, east, west, onRegionSelect]);
+
+    const handleZoomToRegion = useCallback((e) => {
+        e.preventDefault();
+        if (north && south && east && west) {
+            onZoomToRegion({ north, south, east, west });
+        }
+    }, [north, south, east, west, onZoomToRegion]);
 
     const InputWithButtons = useCallback(({ value, setValue, placeholder, vertical = true }) => {
         const handleChange = (e) => {

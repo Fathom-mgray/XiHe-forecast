@@ -12,6 +12,7 @@ import ToggleableRegionSelector from './ToggleableRegionSelector';
 import './MapStyles.css';
 import MapStyleSelector from './MapStyleSelector';
 import InitialModal from './InitialModal';
+import RectangleWithCloseButton from './RectangleWithCloseButton';
 
 
 // Wrapper component to get access to the map instance
@@ -132,18 +133,25 @@ const SSTMap = () => {
             ];
             console.log("Setting selected region:", bounds);
             setSelectedRegion(bounds);
-            if (mapRef.current) {
-                const map = mapRef.current;
-                setIsZooming(true);
-                map.flyToBounds(bounds, {
-                    padding: [50, 50],
-                    maxZoom: 4,
-                    duration: 1,
-                    easeLinearity: 0.8
-                });
-            }
         } else {
             setSelectedRegion(null);
+        }
+    }, []);
+
+    const handleZoomToRegion = useCallback(({ north, south, east, west }) => {
+        if (north && south && east && west && mapRef.current) {
+            const bounds = [
+                [parseFloat(south), parseFloat(west)],
+                [parseFloat(north), parseFloat(east)]
+            ];
+            const map = mapRef.current;
+            setIsZooming(true);
+            map.flyToBounds(bounds, {
+                padding: [50, 50],
+                maxZoom: 4,
+                duration: 1,
+                easeLinearity: 0.8
+            });
         }
     }, []);
 
@@ -165,25 +173,30 @@ const SSTMap = () => {
         console.log("Is Zooming:", isZooming);
     }, [selectedRegion, isZooming]);
 
-    const renderRectangle = useCallback(() => {
+    
+      
+      // The renderRectangle function remains the same as in the previous example
+      const renderRectangle = useCallback(() => {
         if (selectedRegion) {
-            console.log("Rendering rectangle with bounds:", selectedRegion);
-            return (
-                <Pane name="region-box" style={{ zIndex: 600 }}>
-                    <Rectangle 
+          console.log("Rendering rectangle with bounds:", selectedRegion);
+          
+          const handleRemoveRectangle = () => {
+            setSelectedRegion(null);
+          };
+      
+          return (
+            <Pane name="rectangle-pane" style={{ zIndex: 1000 }}>
+                    <RectangleWithCloseButton 
                         bounds={selectedRegion} 
-                        pathOptions={{ 
-                            color: 'black', 
-                            weight: 2, 
-                            opacity: 0.5, 
-                            fill: false 
-                        }} 
+                        onRemove={handleRemoveRectangle} 
                     />
                 </Pane>
-            );
+          );
         }
         return null;
-    }, [selectedRegion]);
+      }, [selectedRegion]);
+    
+    
 
 
     return (
@@ -283,7 +296,8 @@ const SSTMap = () => {
                         imageSrc="/images/salt.png" 
                         name="Salinity"
                     />
-                    <ToggleableRegionSelector onRegionSelect={handleRegionSelect} />
+                    <ToggleableRegionSelector onRegionSelect={handleRegionSelect} 
+                    onZoomToRegion={handleZoomToRegion} />
                 </div>
                 
                 <div style={{
@@ -315,7 +329,7 @@ const SSTMap = () => {
                     flexDirection: 'column',
                     alignItems: 'flex-end',
                 }}>
-                    {/* <RegionSelector onRegionSelect={handleRegionSelect} /> */}
+                    
                     <div style={{ marginTop: '10px' }}>
                         <LegendComponent activeOverlay={activeOverlay} />
                     </div>
