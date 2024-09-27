@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause } from 'lucide-react';
 
@@ -11,12 +11,11 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     const [showDepth, setShowDepth] = useState(false);
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const playIntervalRef = useRef(null);
 
     useEffect(() => {
-        console.log("propBaseDate changed:", propBaseDate);
         if (propBaseDate) {
             const newBaseDate = new Date(propBaseDate);
-            console.log("Setting new base date:", newBaseDate);
             setBaseDate(newBaseDate);
             setSelectedDate(newBaseDate);
             setSliderValue([0]);
@@ -25,10 +24,8 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     }, [propBaseDate]);
 
     useEffect(() => {
-        console.log("propSelectedDate changed:", propSelectedDate);
         if (propSelectedDate) {
             const newSelectedDate = new Date(propSelectedDate);
-            console.log("Setting new selected date:", newSelectedDate);
             setSelectedDate(newSelectedDate);
             const dayDiff = Math.floor((newSelectedDate - baseDate) / (1000 * 60 * 60 * 24));
             setSliderValue([Math.min(Math.max(dayDiff, 0), 9)]);
@@ -52,40 +49,42 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
         setShowDepth(activeOverlay === 'so' || activeOverlay === 'thetao' || activeOverlay === 'speed');
     }, [activeOverlay]);
 
+    const advanceSlider = useCallback(() => {
+        setSliderValue(prevValue => {
+            const newValue = Math.min(prevValue[0] + 1, 9);  // Increment by 1 day, max 9
+            const newDate = new Date(baseDate);
+            newDate.setDate(newDate.getDate() + newValue);
+            setSelectedDate(newDate);
+            onDateChange(newDate);
+            
+            if (newValue === 9) {
+                setIsPlaying(false);  // Stop playing when we reach the end
+            }
+            
+            return [newValue];
+        });
+    }, [baseDate, onDateChange]);
+
     useEffect(() => {
-        let interval;
         if (isPlaying) {
-            interval = setInterval(() => {
-                setSliderValue(prevValue => {
-                    const newValue = prevValue[0] + 0.1;  // Smaller increment for smoother movement
-                    if (newValue > 9) {
-                        setIsPlaying(false);
-                        return [0];
-                    }
-                    const newDate = new Date(baseDate);
-                    newDate.setDate(newDate.getDate() + Math.floor(newValue));
-                    console.log("Auto-playing, new selected date:", newDate);
-                    setSelectedDate(newDate);
-                    onDateChange(newDate);
-                    return [newValue];
-                });
-            }, 200); // Change every 200ms for smoother animation
+            playIntervalRef.current = setInterval(advanceSlider, 1000);  // Change every 1 second
+        } else {
+            clearInterval(playIntervalRef.current);
         }
-        return () => clearInterval(interval);
-    }, [isPlaying, baseDate, onDateChange]);
+
+        return () => clearInterval(playIntervalRef.current);
+    }, [isPlaying, advanceSlider]);
 
     const handleDepthChange = useCallback((event) => {
         const newDepth = Number(event.target.value);
-        console.log("Depth changed to:", newDepth);
         setDepth(newDepth);
         onDepthChange(newDepth);
     }, [onDepthChange]);
 
     const handleBaseDateChange = useCallback((e) => {
         const [year, month, day] = e.target.value.split('-').map(Number);
-        const newDate = new Date(year, month - 1, day);  // month is 0-indexed in JS Date
+        const newDate = new Date(year, month - 1, day);
         if (!isNaN(newDate.getTime())) {
-            console.log("Manually changing base date to:", newDate);
             setBaseDate(newDate);
             setSelectedDate(newDate);
             onBaseDateChange(newDate);
@@ -99,14 +98,13 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
         setSliderValue(newValue);
         const newDate = new Date(baseDate);
         newDate.setDate(newDate.getDate() + Math.floor(newValue[0]));
-        console.log("Slider changed, new selected date:", newDate);
         setSelectedDate(newDate);
         onDateChange(newDate);
     }, [baseDate, onDateChange]);
 
-    const togglePlay = () => {
-        setIsPlaying(!isPlaying);
-    };
+    const togglePlay = useCallback(() => {
+        setIsPlaying(prev => !prev);
+    }, []);
 
     const getMaxDate = () => {
         const today = new Date();
@@ -126,52 +124,48 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     };
 
     return (
-        <div className="fixed bottom-5 left-4 z-50 w-[85rem] space-y-4">
-            <div className="">
-                <div className="my-2 overflow-visible">
-                    <div
-                        className={`
-                            transition-all duration-300 ease-in-out
-                            ${showDepth 
-                                ? 'translate-x-0 opacity-100' 
-                                : '-translate-x-full opacity-0'
-                            }
-                        `}
-                    >
-                        {isTooltipVisible && (
-                            <div 
-                                className="absolute bottom-full my-3 bg-white text-black text-bold text-xs italic py-2 px-3 whitespace-nowrap rounded-full shadow-lg"
-                                style={{
-                                    maxWidth: '200px',
-                                    width: 'max-content'
-                                }}
-                            >
-                                You can enter the depth here
-                            </div>
-                        )}
-                        <div className="flex items-center space-x-2 bg-opacity-30 rounded-full w-fit text-sm p-1 shadow-md" style={{backgroundColor:'rgba(13, 38, 57,0.7)'}}>
-                            <div 
-                                className="relative"
-                                onMouseEnter={() => setIsTooltipVisible(true)}
-                                onMouseLeave={() => setIsTooltipVisible(false)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
-                            <div className="relative flex items-center">
-                                <input
-                                    type="number"
-                                    value={depth}
-                                    onChange={handleDepthChange}
-                                    min={0}
-                                    max={23}
-                                    className="bg-transparent text-white appearance-none"
-                                    style={{ '-moz-appearance': 'textfield' }}
-                                />
-                                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white">m</span>
-                            </div>
+        <div className="fixed bottom-5 left-4 z-50 w-[75%] max-w-[85rem] space-y-4">
+            <div className="flex flex-col items-start gap-2">
+                <div className={`
+                    transition-all duration-300 ease-in-out
+                    ${showDepth 
+                        ? 'opacity-100' 
+                        : 'opacity-0 pointer-events-none'
+                    }
+                `}>
+                    {isTooltipVisible && (
+                        <div 
+                            className="absolute bottom-full my-3 bg-white text-black text-bold text-xs italic py-2 px-3 whitespace-nowrap rounded-full shadow-lg"
+                            style={{
+                                maxWidth: '200px',
+                                width: 'max-content'
+                            }}
+                        >
+                            You can enter the depth here
+                        </div>
+                    )}
+                    <div className="flex items-center space-x-2 bg-opacity-30 rounded-full w-fit text-sm p-1 shadow-md" style={{backgroundColor:'rgba(13, 38, 57,0.7)'}}>
+                        <div 
+                            className="relative"
+                            onMouseEnter={() => setIsTooltipVisible(true)}
+                            onMouseLeave={() => setIsTooltipVisible(false)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
+                        <div className="relative flex items-center">
+                            <input
+                                type="number"
+                                value={depth}
+                                onChange={handleDepthChange}
+                                min={0}
+                                max={23}
+                                className="bg-transparent text-white appearance-none w-16"
+                                style={{ '-moz-appearance': 'textfield' }}
+                            />
+                            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white">m</span>
                         </div>
                     </div>
                 </div>
@@ -187,10 +181,10 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                     />
                 </div>
             </div>
-            <div className="mt-2 flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
                 <button
                     onClick={togglePlay}
-                    className="hover:bg-opacity-30 text-white rounded-full p-2 transition-colors duration-200 mb-2 shadow-md"
+                    className="hover:bg-opacity-30 text-white rounded-full p-2 transition-colors duration-200 shadow-md flex-shrink-0"
                     style={{backgroundColor:'rgba(13, 38, 57,0.7)'}}
                 >
                     {isPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -199,10 +193,10 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                     <Slider
                         defaultValue={[0]}
                         max={9}
-                        step={0.1}  // Smaller step for smoother movement
+                        step={1}
                         value={sliderValue}
                         onValueChange={handleSliderChange}
-                        className="w-full transition-all duration-1000 ease-linear"  // Added smooth transition
+                        className="w-full transition-all duration-1000 ease-linear"
                     />
                     <div className="relative w-full mt-2">
                         <div className="flex justify-between absolute w-full" style={{ left: '0.5%', right: '0.5%' }}>
@@ -217,11 +211,11 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                                             position: 'absolute', 
                                             left: `${(index / 9) * 100}%`, 
                                             transform: 'translateX(-50%)',
-                                            width: '40px',  // Fixed width for consistency
+                                            width: 'clamp(30px, 2.5vw, 40px)',
                                         }}
                                     >
                                         {formatDateLabel(date).split('\n').map((part, i) => (
-                                            <div key={i}>{part}</div>
+                                            <div key={i} className="whitespace-nowrap">{part}</div>
                                         ))}
                                     </div>
                                 );

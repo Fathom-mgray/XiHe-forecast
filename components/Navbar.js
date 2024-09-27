@@ -17,7 +17,7 @@ const NavBar = () => {
             {/* Left side: Logo and Company Name */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <img
-                    src="/images/logo8.png"
+                    src="/images/logo1.png"
                     alt="Logo"
                     style={{ height: '40px', marginRight: '12px', filter: 'drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.3))' }}
                 />

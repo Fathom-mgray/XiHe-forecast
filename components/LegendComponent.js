@@ -11,26 +11,22 @@ const VARIABLE_OPTS = {
 };
 
 const LegendComponent = ({ activeOverlay }) => {
-    // Check if activeOverlay exists in VARIABLE_OPTS, otherwise default to 'sst'
     const variable = VARIABLE_OPTS[activeOverlay] || VARIABLE_OPTS['sst'];
     const { interpolator, vmin, vmax, name, unit } = variable;
 
-    // Create a color scale based on vmin and vmax
     const colorScale = scaleLinear()
-        .domain([vmin, vmax]) // Mapping the range to vmin and vmax
+        .domain([vmin, vmax])
         .range([0, 1])
         .clamp(true);
 
-    // Create an array of colors from vmin to vmax
     const colorArray = Array.from({ length: 100 }, (_, i) => interpolator(i / 99));
 
     return (
-        <div className="p-3 my-4 rounded" style={{ width: '350px', position: 'relative' }}>
+        <div className="p-3 my-4 rounded" style={{ width: '22vw', maxWidth: '450px', minWidth: '150px', position: 'relative' }}>
             <div style={{ height: '20px', display: 'flex', position: 'relative', boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)', borderRadius: '4px' }}>
                 {colorArray.map((color, index) => (
                     <div key={index} style={{ background: color, flex: 1 }} />
                 ))}
-                {/* Add vmin and vmax labels inside the color bar with text shadow */}
                 <div style={{
                     position: 'absolute', 
                     left: '2px', 
@@ -40,7 +36,7 @@ const LegendComponent = ({ activeOverlay }) => {
                     color: 'white', 
                     paddingLeft: '2px',
                     zIndex: 1,
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'  // Add text shadow
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'
                 }}>
                     {vmin} {unit}
                 </div>
@@ -53,7 +49,7 @@ const LegendComponent = ({ activeOverlay }) => {
                     color: 'white', 
                     paddingRight: '2px',
                     zIndex: 1,
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'  // Add text shadow
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'
                 }}>
                     {vmax} {unit}
                 </div>
