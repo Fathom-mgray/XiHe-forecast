@@ -206,7 +206,7 @@ const SSTMap = () => {
                     center={initialCenter}
                     zoom={initialZoom}
                     style={{ height: "100vh", width: "100%" }}
-                    minZoom={2}
+                    minZoom={2.34}
                     maxBounds={[[80, -180], [-75, 180]]}
                     maxBoundsViscosity={1.0}
                     zoomControl={false}
@@ -231,14 +231,14 @@ const SSTMap = () => {
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         />
                     </Pane>
-                    {/* <Pane name="temperature-data" style={{ zIndex: 500 }}>
+                    <Pane name="temperature-data" style={{ zIndex: 500 }}>
                         <TemperatureDataHandler 
                         selectedDate={selectedDate}
                         baseDate={baseDate}
                         depth={depth}
                         activeOverlay={activeOverlay}
                         />
-                    </Pane> */}
+                    </Pane>
                 
                     {renderRectangle()}
                 </MapContainer>

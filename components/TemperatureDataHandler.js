@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useMapEvents, Popup, useMap, CircleMarker } from 'react-leaflet';
 import * as GeoTIFF from 'geotiff';
@@ -6,6 +8,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
     const [layerData, setLayerData] = useState(null);
     const [error, setError] = useState(null);
     const [clickedPoint, setClickedPoint] = useState(null);
+    const [rawResponse, setRawResponse] = useState(null);
     const popupRef = useRef(null);
     const map = useMap();
 
@@ -26,32 +29,41 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
     const selectedDateObj = useMemo(() => new Date(selectedDate), [selectedDate]);
     const baseDateObj = useMemo(() => new Date(baseDate), [baseDate]);
 
-    const dateDiff = useMemo(() => {
+    const leadDay = useMemo(() => {
         return Math.floor((selectedDateObj - baseDateObj) / (1000 * 60 * 60 * 24));
     }, [selectedDateObj, baseDateObj]);
 
     const layerName = useMemo(() => {
-        console.log(selectedDateObj, baseDateObj)
         const formatDate = (date) => {
-
-            console.log(date)
             return date.toISOString().split('T')[0].replace(/-/g, '');
         };
         
-        const formattedSelectedDate = formatDate(selectedDateObj);
         const formattedBaseDate = formatDate(baseDateObj);
 
-        return `XiHe-App:${formattedBaseDate}_${dateDiff}_${formattedBaseDate}_${overlayType}.tiff`;
-    }, [selectedDateObj, dateDiff, baseDateObj, overlayType]);
+        return `XiHe-App:data_${leadDay}_${depth}_${formattedBaseDate}_${overlayType}.tiff`;
+    }, [leadDay, depth, baseDateObj, overlayType]);
 
     const fetchWCSData = useCallback(async () => {
         try {
-            const response = await fetch(`http://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`);
+            const targetUrl = `http://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`;
+            
+            const response = await fetch('/api/proxy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: targetUrl }),
+            });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const arrayBuffer = await response.arrayBuffer();
+            
+            console.log("Raw response:", arrayBuffer);
+            setRawResponse(arrayBuffer);
+
             const geoTiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
             const image = await geoTiff.getImage();
             
@@ -59,12 +71,13 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
             const [tiePointLong, tiePointLat] = image.getOrigin();
             const [pixelWidth, pixelHeight] = image.getResolution();
             
-            const fourthLayerData = data[3];
+            // Change to fifth layer (index 4 since arrays are zero-indexed)
+            const fifthLayerData = data[4];
             const width = data.width;
             const height = data.height;
 
             setLayerData({
-                values: fourthLayerData,
+                values: fifthLayerData,
                 width,
                 height,
                 tiePointLong,
@@ -74,7 +87,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
             });
             setError(null);
 
-            console.log("Fourth layer data extracted.");
+            console.log("Fifth layer data extracted.");
         } catch (error) {
             console.error("Error fetching WCS data:", error);
             setLayerData(null);
@@ -174,7 +187,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
                 pathOptions={{ 
                     fillColor: 'transparent',
                     fillOpacity: 0,
-                    color: 'white',
+                    color: 'black',
                     weight: 3
                 }}
             />
@@ -199,9 +212,25 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
                             <div>{clickedPoint.lng.toFixed(2)}</div>
                         </div>
                         <div className="bg-black w-[1px] h-[110px]"></div>
-                        <div className="left-0 bg-black bg-opacity-50 text-white text-lg font-semibold w-40">
-                            <div className='ml-10'>{formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}</div>
-                        </div>
+                        <div className="rounded-r-full left-0 bg-black bg-opacity-50 text-white text-lg font-semibold w-40 flex items-center justify-between pr-2">
+    <div className='ml-10'>
+        {formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
+    </div>
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-5 w-5" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="lightblue"
+    >
+        <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M19 9l-7 7-7-7" 
+        />
+    </svg>
+</div>
                     </div>
                 </div>
             </Popup>
