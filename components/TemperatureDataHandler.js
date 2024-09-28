@@ -221,7 +221,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
         className="h-5 w-5" 
         fill="none" 
         viewBox="0 0 24 24" 
-        stroke="lightblue"
+        stroke="white"
     >
         <path 
             strokeLinecap="round" 
