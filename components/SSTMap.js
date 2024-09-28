@@ -185,10 +185,12 @@ const SSTMap = () => {
           };
       
           return (
+            <Pane style={{ zIndex: 1000 }}>
             <RectangleWithCloseButton 
               bounds={selectedRegion} 
               onRemove={handleRemoveRectangle} 
             />
+            </Pane>
           );
         }
         return null;

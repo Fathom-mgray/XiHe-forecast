@@ -48,7 +48,7 @@ const RegionSelector = React.memo(({ onRegionSelect, onZoomToRegion }) => {
                     placeholder={placeholder}
                     value={value}
                     onChange={handleChange}
-                    className="w-full h-full bg-gray-700 text-white rounded-full text-center text-sm font-semibold focus:outline-none"
+                    className="w-full h-full bg-gray-700 text-white rounded-full text-center text-sm font-semibold focus:outline-none border border-white shadow-md"
                 />
                 {vertical ? (
                     <>

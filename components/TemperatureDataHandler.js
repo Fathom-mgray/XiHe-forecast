@@ -188,7 +188,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
                     fillColor: 'transparent',
                     fillOpacity: 0,
                     color: 'black',
-                    weight: 3
+                    weight: 5
                 }}
             />
             <Popup

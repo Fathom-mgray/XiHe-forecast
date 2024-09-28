@@ -67,7 +67,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
 
     useEffect(() => {
         if (isPlaying) {
-            playIntervalRef.current = setInterval(advanceSlider, 1000);  // Change every 1 second
+            playIntervalRef.current = setInterval(advanceSlider, 1500);  // Change every 1 second
         } else {
             clearInterval(playIntervalRef.current);
         }
@@ -156,16 +156,35 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                         </div>
                         <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
                         <div className="relative flex items-center">
-                            <input
-                                type="number"
-                                value={depth}
-                                onChange={handleDepthChange}
-                                min={0}
-                                max={23}
-                                className="bg-transparent text-white appearance-none w-16"
-                                style={{ '-moz-appearance': 'textfield' }}
-                            />
-                            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white">m</span>
+                        <select
+                            value={depth}
+                            onChange={handleDepthChange}
+                            className="bg-transparent text-white appearance-none pr-2"
+                        >
+                            <option value={0}>Surface</option>
+                            <option value={10}>Middle</option>
+                            <option value={22}>Bottom</option>
+                        </select>
+
+
+                        <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-4 w-4" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="white"
+    >
+        <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M19 9l-7 7-7-7" 
+        />
+    </svg>
+
+                        
+
+                            
                         </div>
                     </div>
                 </div>
