@@ -6,7 +6,8 @@ import * as GeoTIFF from 'geotiff';
 
 const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     const [layerData, setLayerData] = useState(null);
-    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [dataAvailable, setDataAvailable] = useState(false);
     const [clickedPoint, setClickedPoint] = useState(null);
     const [rawResponse, setRawResponse] = useState(null);
     const popupRef = useRef(null);
@@ -44,6 +45,8 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
     }, [leadDay, depth, baseDateObj, overlayType]);
 
     const fetchWCSData = useCallback(async () => {
+        setLoading(true);
+        setDataAvailable(false);
         try {
             const targetUrl = `http://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`;
             
@@ -85,13 +88,14 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
                 pixelWidth,
                 pixelHeight
             });
-            setError(null);
+            setDataAvailable(true);
 
             console.log("Fifth layer data extracted.");
         } catch (error) {
             console.error("Error fetching WCS data:", error);
             setLayerData(null);
-            setError(`Failed to fetch data: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     }, [layerName]);
 
@@ -175,67 +179,94 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
         return `${formattedValue} ${unit}`;
     };
 
-    if (error) {
-        return <div>Error: {error}</div>;
-    }
+    const messageStyle = {
+        position: 'fixed',
+        top: '135px',
+        left: '10px',
+        backgroundColor: 'white',
+        padding: '10px',
+        // borderRadius: '4px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        zIndex: 1000,
+        width: '200px',
+        textAlign: 'center'
+    };
 
-    return clickedPoint ? (
+    return (
         <>
-            <CircleMarker 
-                center={[clickedPoint.lat, clickedPoint.lng]}
-                radius={4}
-                pathOptions={{ 
-                    fillColor: 'transparent',
-                    fillOpacity: 0,
-                    color: 'black',
-                    weight: 5
-                }}
-            />
-            <Popup
-                position={[clickedPoint.lat, clickedPoint.lng]}
-                ref={popupRef}
-                closeButton={false}
-                offset={[59, 20]}
-                className="custom-popup"
-            >
-                <div className="relative">
-                    <button 
-                        onClick={handleClosePopup}
-                        className="absolute top-0 right-0 bg-black bg-opacity-50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                        style={{ transform: 'translate(50%, -50%)' }}
-                    >
-                        ×
-                    </button>
-                    <div className="flex items-start">
-                        <div className="flex flex-col text-[10px]  mr-1 px-1 py-0.5 w-10">
-                            <div>{clickedPoint.lat.toFixed(2)}</div>
-                            <div>{clickedPoint.lng.toFixed(2)}</div>
-                        </div>
-                        <div className="bg-black w-[1px] h-[110px]"></div>
-                        <div className="rounded-r-full left-0 bg-black bg-opacity-50 text-white text-lg font-semibold w-40 flex items-center justify-between pr-2">
-    <div className='ml-10'>
-        {formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
-    </div>
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className="h-5 w-5" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="white"
-    >
-        <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M19 9l-7 7-7-7" 
-        />
-    </svg>
-</div>
-                    </div>
+            {loading && (
+                <div className='rounded-full font-semibold' style={messageStyle}>
+                    Loading data...
                 </div>
-            </Popup>
+            )}
+            {!loading && dataAvailable && (
+                <div 
+                    className='rounded-full font-semibold'
+                    style={{...messageStyle, cursor: 'pointer'}}
+                    onClick={() => console.log("Data is available. Implement view action here.")}
+                >
+                    Data available. Tap anywhere.
+                </div>
+            )}
+            {clickedPoint && (
+                <>
+                    <CircleMarker 
+                        center={[clickedPoint.lat, clickedPoint.lng]}
+                        radius={4}
+                        pathOptions={{ 
+                            fillColor: 'transparent',
+                            fillOpacity: 0,
+                            color: 'black',
+                            weight: 5
+                        }}
+                    />
+                    <Popup
+                        position={[clickedPoint.lat, clickedPoint.lng]}
+                        ref={popupRef}
+                        closeButton={false}
+                        offset={[59, 20]}
+                        className="custom-popup"
+                    >
+                        <div className="relative">
+                            <button 
+                                onClick={handleClosePopup}
+                                className="absolute top-0 right-0 bg-black bg-opacity-50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                                style={{ transform: 'translate(50%, -50%)' }}
+                            >
+                                ×
+                            </button>
+                            <div className="flex items-start">
+                                <div className="flex flex-col text-[10px]  mr-1 px-1 py-0.5 w-10">
+                                    <div>{clickedPoint.lat.toFixed(2)}</div>
+                                    <div>{clickedPoint.lng.toFixed(2)}</div>
+                                </div>
+                                <div className="bg-black w-[1px] h-[110px]"></div>
+                                <div className="rounded-r-full left-0 bg-black bg-opacity-50 text-white text-lg font-semibold w-40 flex items-center justify-between pr-2">
+                                    <div className='ml-10'>
+                                        {formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
+                                    </div>
+                                    <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        className="h-5 w-5" 
+                                        fill="none" 
+                                        viewBox="0 0 24 24" 
+                                        stroke="white"
+                                    >
+                                        <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={2} 
+                                            d="M19 9l-7 7-7-7" 
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </Popup>
+                </>
+            )}
         </>
-    ) : null;
+    );
 };
 
 export default React.memo(TemperatureDataHandler);

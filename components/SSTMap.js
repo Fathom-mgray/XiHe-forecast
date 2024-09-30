@@ -14,16 +14,17 @@ import MapStyleSelector from './MapStyleSelector';
 import InitialModal from './InitialModal';
 import RectangleWithCloseButton from './RectangleWithCloseButton';
 
-
-// Wrapper component to get access to the map instance
-
-
 const SSTMap = () => {
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
     const [showModal, setShowModal] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [baseDate, setBaseDate] = useState(new Date());
+    
+    // Set the initial dates to yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const [selectedDate, setSelectedDate] = useState(yesterday);
+    const [baseDate, setBaseDate] = useState(yesterday);
+    
     const [depth, setDepth] = useState(0);
     const [selectedRegion, setSelectedRegion] = useState(null);
     const [isZooming, setIsZooming] = useState(false);
@@ -33,12 +34,7 @@ const SSTMap = () => {
     const [initialZoom, setInitialZoom] = useState(3);
     const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
 
-
-    // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const mapRef = useRef(null);
-
-
-
 
     const mapLayers = {
         default: {
@@ -48,12 +44,10 @@ const SSTMap = () => {
         light: {
             url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            
         },
         dark: {
             url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            
         }
     };
 
@@ -91,15 +85,9 @@ const SSTMap = () => {
         console.log("isInitialSetupDone:", isInitialSetupDone);
     }, [showInitialModal, isInitialSetupDone]);
 
-
     const handleMapLayerChange = useCallback((value) => {
         setSelectedMapLayer(value);
     }, []);
-
-    const toggleDropdown = () => {
-        setIsDropdownOpen(!isDropdownOpen);
-    };
-
 
     const handleCloseModal = useCallback(() => {
         setShowModal(false);
@@ -123,7 +111,6 @@ const SSTMap = () => {
             return overlayType;
         });
     }, []);
-
 
     const handleRegionSelect = useCallback(({ north, south, east, west }) => {
         if (north && south && east && west) {
@@ -155,7 +142,6 @@ const SSTMap = () => {
         }
     }, []);
 
-
     useEffect(() => {
         if (mapRef.current) {
             const map = mapRef.current;
@@ -173,77 +159,69 @@ const SSTMap = () => {
         console.log("Is Zooming:", isZooming);
     }, [selectedRegion, isZooming]);
 
-    
-      
-      // The renderRectangle function remains the same as in the previous example
-      const renderRectangle = useCallback(() => {
+    const renderRectangle = useCallback(() => {
         if (selectedRegion) {
-          console.log("Rendering rectangle with bounds:", selectedRegion);
-          
-          const handleRemoveRectangle = () => {
-            setSelectedRegion(null);
-          };
-      
-          return (
-            <Pane style={{ zIndex: 1000 }}>
-            <RectangleWithCloseButton 
-              bounds={selectedRegion} 
-              onRemove={handleRemoveRectangle} 
-            />
-            </Pane>
-          );
+            console.log("Rendering rectangle with bounds:", selectedRegion);
+            
+            const handleRemoveRectangle = () => {
+                setSelectedRegion(null);
+            };
+        
+            return (
+                <Pane style={{ zIndex: 1000 }}>
+                    <RectangleWithCloseButton 
+                        bounds={selectedRegion} 
+                        onRemove={handleRemoveRectangle} 
+                    />
+                </Pane>
+            );
         }
         return null;
-      }, [selectedRegion]);
-    
-    
-
+    }, [selectedRegion]);
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
             <NavBar />
             <div style={{ flexGrow: 1, position: 'relative' }}>
-            {isInitialSetupDone && (
-            <MapContainer 
-                    center={initialCenter}
-                    zoom={initialZoom}
-                    style={{ height: "100vh", width: "100%" }}
-                    minZoom={2.34}
-                    maxBounds={[[80, -180], [-75, 180]]}
-                    maxBoundsViscosity={1.0}
-                    zoomControl={false}
-                    ref={mapRef}
-                >
-                    <TileLayer
-                        url={mapLayers[selectedMapLayer].url}
-                        attribution={mapLayers[selectedMapLayer].attribution}
-                        // subdomains={mapLayers[selectedMapLayer].subdomains}
-                    />
-                    <Pane name="data-visualization" style={{ zIndex: 300 }}>
-                        <WMSOverlayLayers 
-                            selectedDate={selectedDate}
-                            baseDate={baseDate}
-                            depth={depth}
-                            activeOverlay={activeOverlay}
-                        />
-                    </Pane>
-                    <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
+                {isInitialSetupDone && (
+                    <MapContainer 
+                        center={initialCenter}
+                        zoom={initialZoom}
+                        style={{ height: "100vh", width: "100%" }}
+                        minZoom={2.34}
+                        maxBounds={[[80, -180], [-75, 180]]}
+                        maxBoundsViscosity={1.0}
+                        zoomControl={false}
+                        ref={mapRef}
+                    >
                         <TileLayer
-                            url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            url={mapLayers[selectedMapLayer].url}
+                            attribution={mapLayers[selectedMapLayer].attribution}
                         />
-                    </Pane>
-                    <Pane name="temperature-data" style={{ zIndex: 500 }}>
-                        <TemperatureDataHandler 
-                        selectedDate={selectedDate}
-                        baseDate={baseDate}
-                        depth={depth}
-                        activeOverlay={activeOverlay}
-                        />
-                    </Pane>
-                
-                    {renderRectangle()}
-                </MapContainer>
+                        <Pane name="data-visualization" style={{ zIndex: 300 }}>
+                            <WMSOverlayLayers 
+                                selectedDate={selectedDate}
+                                baseDate={baseDate}
+                                depth={depth}
+                                activeOverlay={activeOverlay}
+                            />
+                        </Pane>
+                        <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
+                            <TileLayer
+                                url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            />
+                        </Pane>
+                        <Pane name="temperature-data" style={{ zIndex: 500 }}>
+                            <TemperatureDataHandler 
+                                selectedDate={selectedDate}
+                                baseDate={baseDate}
+                                depth={depth}
+                                activeOverlay={activeOverlay}
+                            />
+                        </Pane>
+                        {renderRectangle()}
+                    </MapContainer>
                 )}
                 <div style={{ 
                     position: 'absolute', 
@@ -256,7 +234,6 @@ const SSTMap = () => {
                         handleMapLayerChange={handleMapLayerChange}
                     />
                 </div>
-                
                 <div style={{ 
                     position: 'absolute', 
                     top: '4rem', 
@@ -296,10 +273,11 @@ const SSTMap = () => {
                         imageSrc="/images/salt.png" 
                         name="Salinity"
                     />
-                    <ToggleableRegionSelector onRegionSelect={handleRegionSelect} 
-                    onZoomToRegion={handleZoomToRegion} />
+                    <ToggleableRegionSelector 
+                        onRegionSelect={handleRegionSelect} 
+                        onZoomToRegion={handleZoomToRegion} 
+                    />
                 </div>
-                
                 <div style={{
                     position: 'absolute',
                     bottom: '0px',
@@ -316,10 +294,8 @@ const SSTMap = () => {
                         activeOverlay={activeOverlay}
                         baseDate={baseDate}
                         selectedDate={selectedDate}
-
                     />
                 </div>
-
                 <div style={{
                     position: 'absolute',
                     bottom: '0px',
@@ -329,7 +305,6 @@ const SSTMap = () => {
                     flexDirection: 'column',
                     alignItems: 'flex-end',
                 }}>
-                    
                     <div style={{ marginTop: '10px' }}>
                         <LegendComponent activeOverlay={activeOverlay} />
                     </div>

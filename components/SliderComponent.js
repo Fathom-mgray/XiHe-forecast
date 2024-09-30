@@ -11,7 +11,8 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     const [showDepth, setShowDepth] = useState(false);
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
-    const playIntervalRef = useRef(null);
+    const transitionTimeoutRef = useRef(null);
+    const cycleCompletedRef = useRef(false);
 
     useEffect(() => {
         if (propBaseDate) {
@@ -46,20 +47,26 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     }, [baseDate, updateDateLabels]);
 
     useEffect(() => {
-        setShowDepth(activeOverlay === 'so' || activeOverlay === 'thetao' || activeOverlay === 'speed');
-    }, [activeOverlay]);
+        const shouldShowDepth = activeOverlay === 'so' || activeOverlay === 'thetao' || activeOverlay === 'speed';
+        setShowDepth(shouldShowDepth);
+
+        if (!shouldShowDepth) {
+            setDepth(0);
+            onDepthChange(0);
+        }
+    }, [activeOverlay, onDepthChange]);
 
     const advanceSlider = useCallback(() => {
         setSliderValue(prevValue => {
-            const newValue = Math.min(prevValue[0] + 1, 9);  // Increment by 1 day, max 9
+            let newValue = prevValue[0] + 1;
+            if (newValue > 9) {
+                newValue = 0;  // Loop back to the start
+                cycleCompletedRef.current = true;
+            }
             const newDate = new Date(baseDate);
             newDate.setDate(newDate.getDate() + newValue);
             setSelectedDate(newDate);
             onDateChange(newDate);
-            
-            if (newValue === 9) {
-                setIsPlaying(false);  // Stop playing when we reach the end
-            }
             
             return [newValue];
         });
@@ -67,12 +74,23 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
 
     useEffect(() => {
         if (isPlaying) {
-            playIntervalRef.current = setInterval(advanceSlider, 1500);  // Change every 1 second
+            const advanceWithTransition = () => {
+                advanceSlider();
+                if (cycleCompletedRef.current) {
+                    setIsPlaying(false);
+                    cycleCompletedRef.current = false;
+                } else {
+                    // Set a timeout for the next advancement
+                    transitionTimeoutRef.current = setTimeout(advanceWithTransition, 4000);  // 4 seconds between each date
+                }
+            };
+            // Start the first advancement
+            transitionTimeoutRef.current = setTimeout(advanceWithTransition, 4000);
         } else {
-            clearInterval(playIntervalRef.current);
+            clearTimeout(transitionTimeoutRef.current);
         }
 
-        return () => clearInterval(playIntervalRef.current);
+        return () => clearTimeout(transitionTimeoutRef.current);
     }, [isPlaying, advanceSlider]);
 
     const handleDepthChange = useCallback((event) => {
@@ -104,6 +122,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
 
     const togglePlay = useCallback(() => {
         setIsPlaying(prev => !prev);
+        cycleCompletedRef.current = false;  // Reset cycle completion when play is toggled
     }, []);
 
     const getMaxDate = () => {
@@ -156,35 +175,29 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                         </div>
                         <span className="text-white font-semibold whitespace-nowrap">Depth:</span>
                         <div className="relative flex items-center">
-                        <select
-                            value={depth}
-                            onChange={handleDepthChange}
-                            className="bg-transparent text-white appearance-none pr-2"
-                        >
-                            <option value={0}>Surface</option>
-                            <option value={10}>Middle</option>
-                            <option value={22}>Bottom</option>
-                        </select>
-
-
-                        <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className="h-4 w-4" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="white"
-    >
-        <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M19 9l-7 7-7-7" 
-        />
-    </svg>
-
-                        
-
-                            
+                            <select
+                                value={depth}
+                                onChange={handleDepthChange}
+                                className="bg-transparent text-white appearance-none pr-2"
+                            >
+                                <option value={0}>Surface</option>
+                                <option value={10}>Middle</option>
+                                <option value={22}>Bottom</option>
+                            </select>
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                className="h-4 w-4" 
+                                fill="none" 
+                                viewBox="0 0 24 24" 
+                                stroke="white"
+                            >
+                                <path 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    strokeWidth={2} 
+                                    d="M19 9l-7 7-7-7" 
+                                />
+                            </svg>
                         </div>
                     </div>
                 </div>

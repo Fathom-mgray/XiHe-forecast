@@ -7,7 +7,13 @@ const VARIABLE_OPTS = {
     "thetao": { "interpolator": interpolatePlasma, "vmin": -4, "vmax": 30, "name": "Potential Temperature", "unit": "°C" },
     "sst": { "interpolator": interpolatePlasma, "vmin": -4, "vmax": 30, "name": "Surface Temperature", "unit": "°C" },
     "zos": { "interpolator": interpolateRdBu, "vmin": -2, "vmax": 2, "name": "Surface Height", "unit": "m" },
-    "speed": { "interpolator": interpolateCool, "vmin": -2, "vmax": 2, "name": "Current Speed", "unit": "m/s" }
+    "speed": { 
+        "interpolator": t => interpolateCool(t * 0.5),  // Use only the first half of the cool scale
+        "vmin": 0, 
+        "vmax": 2, 
+        "name": "Current Speed", 
+        "unit": "m/s" 
+    }
 };
 
 const LegendComponent = ({ activeOverlay }) => {
@@ -27,30 +33,10 @@ const LegendComponent = ({ activeOverlay }) => {
                 {colorArray.map((color, index) => (
                     <div key={index} style={{ background: color, flex: 1 }} />
                 ))}
-                <div style={{
-                    position: 'absolute', 
-                    left: '2px', 
-                    top: '50%', 
-                    transform: 'translateY(-50%)', 
-                    fontSize: '10px', 
-                    color: 'white', 
-                    paddingLeft: '2px',
-                    zIndex: 1,
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'
-                }}>
+                <div style={{ position: 'absolute', left: '2px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'white', paddingLeft: '2px', zIndex: 1, textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)' }}>
                     {vmin} {unit}
                 </div>
-                <div style={{
-                    position: 'absolute', 
-                    right: '2px', 
-                    top: '50%', 
-                    transform: 'translateY(-50%)', 
-                    fontSize: '10px', 
-                    color: 'white', 
-                    paddingRight: '2px',
-                    zIndex: 1,
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)'
-                }}>
+                <div style={{ position: 'absolute', right: '2px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'white', paddingRight: '2px', zIndex: 1, textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)' }}>
                     {vmax} {unit}
                 </div>
             </div>

@@ -35,6 +35,7 @@
     "mapbox-gl": "^3.6.0",
     "netcdfjs": "^3.0.0",
     "next": "14.2.7",
+    "node-cache": "^5.1.2",
     "ol": "^10.1.0",
     "react": "^18",
     "react-dom": "^18",

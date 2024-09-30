@@ -6,7 +6,11 @@ const InitialModal = React.memo(({ isOpen, onClose, onSubmit }) => {
     const [south, setSouth] = useState('');
     const [east, setEast] = useState('');
     const [west, setWest] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    
+    // Set the initial date to yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const [date, setDate] = useState(yesterday.toISOString().split('T')[0]);
 
     const handleSubmit = useCallback((e) => {
         e.preventDefault();
@@ -71,7 +75,6 @@ const InitialModal = React.memo(({ isOpen, onClose, onSubmit }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
             <div className="relative bg-white rounded-lg p-8 max-w-3xl w-full shadow-md">
-                {/* Cross button at top-right corner */}
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
                     <X size={24} />
                 </button>
@@ -92,18 +95,18 @@ const InitialModal = React.memo(({ isOpen, onClose, onSubmit }) => {
                         <InputWithButtons value={south} setValue={setSouth} placeholder="S" />
                     </div>
                     <div className="flex items-center space-x-2 bg-black bg-opacity-50 px-3 rounded-full w-fit text-sm shadow-md">
-    <span className="text-white font-semibold whitespace-nowrap">Date:</span>
-    <input
-        type="date"
-        id="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        className="bg-transparent px-2 py-1 text-white"
-    />
-</div><br/>
-<hr></hr>
+                        <span className="text-white font-semibold whitespace-nowrap">Date:</span>
+                        <input
+                            type="date"
+                            id="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="bg-transparent px-2 py-1 text-white"
+                        />
+                    </div>
+                    <br/>
+                    <hr/>
 
-                    {/* Get Started button */}
                     <div className="flex justify-center">
                         <button
                             type="submit"
