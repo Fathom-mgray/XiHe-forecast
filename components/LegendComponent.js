@@ -25,7 +25,10 @@ const LegendComponent = ({ activeOverlay }) => {
         .range([0, 1])
         .clamp(true);
 
-    const colorArray = Array.from({ length: 100 }, (_, i) => interpolator(i / 99));
+    const colorArray = Array.from({ length: 100 }, (_, i) => {
+        const t = i / 99;
+        return activeOverlay === 'speed' ? interpolator(1 - t) : interpolator(t);
+    });
 
     return (
         <div className="p-3 my-4 rounded" style={{ width: '22vw', maxWidth: '450px', minWidth: '150px', position: 'relative' }}>

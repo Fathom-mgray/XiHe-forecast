@@ -17,8 +17,8 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
 
     const overlayTypeMap = {
         sst: 'sst',
-        so: 'salinity',
-        thetao: 'thetaO',
+        so: 'so',
+        thetao: 'thetao',
         zos: 'zos',
         speed: 'speed'
     };
@@ -158,9 +158,9 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
     const getUnitByOverlay = (overlay) => {
         switch (overlay) {
             case 'sst':
-            case 'thetaO':
+            case 'thetao':
                 return '°C';
-            case 'salinity':
+            case 'so':
                 return 'PSU';
             case 'zos':
                 return 'm';

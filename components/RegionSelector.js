@@ -7,38 +7,45 @@ const RegionSelector = React.memo(({ onRegionSelect, onZoomToRegion }) => {
     const [east, setEast] = useState('');
     const [west, setWest] = useState('');
 
+    const isValidCoordinate = (value) => {
+        const num = parseInt(value, 10);
+        return value !== '' && !isNaN(num) && num >= -180 && num <= 180;
+    };
+
     useEffect(() => {
-        if (north && south && east && west) {
+        if (isValidCoordinate(north) && isValidCoordinate(south) && 
+            isValidCoordinate(east) && isValidCoordinate(west)) {
             onRegionSelect({ north, south, east, west });
         }
     }, [north, south, east, west, onRegionSelect]);
 
     const handleZoomToRegion = useCallback((e) => {
         e.preventDefault();
-        if (north && south && east && west) {
+        if (isValidCoordinate(north) && isValidCoordinate(south) && 
+            isValidCoordinate(east) && isValidCoordinate(west)) {
             onZoomToRegion({ north, south, east, west });
         }
     }, [north, south, east, west, onZoomToRegion]);
 
     const InputWithButtons = useCallback(({ value, setValue, placeholder, vertical = true }) => {
         const handleChange = (e) => {
-            const newValue = e.target.value.replace(/[^\d.-]/g, '');
-            setValue(newValue);
+            const newValue = e.target.value.replace(/[^\d-]/g, '');
+            if (newValue === '' || newValue === '-' || (parseInt(newValue, 10) >= -180 && parseInt(newValue, 10) <= 180)) {
+                setValue(newValue);
+            }
         };
 
-        const handleIncrement = () => {
+        const adjustValue = (adjustment) => {
             setValue(prev => {
-                const num = parseFloat(prev) || 0;
-                return (num + 1).toString();
+                const num = parseInt(prev, 10) || 0;
+                let newValue = num + adjustment;
+                newValue = Math.max(-180, Math.min(180, newValue));
+                return newValue.toString();
             });
         };
 
-        const handleDecrement = () => {
-            setValue(prev => {
-                const num = parseFloat(prev) || 0;
-                return (num - 1).toString();
-            });
-        };
+        const handleIncrement = () => adjustValue(1);
+        const handleDecrement = () => adjustValue(-1);
 
         return (
             <div className="relative w-14 h-14">
@@ -93,7 +100,7 @@ const RegionSelector = React.memo(({ onRegionSelect, onZoomToRegion }) => {
             <button
                 type="submit"
                 className="bg-black bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 focus:outline-none focus:shadow-outline flex items-center justify-center text-xs"
-                disabled={!north || !south || !east || !west}
+                disabled={!isValidCoordinate(north) || !isValidCoordinate(south) || !isValidCoordinate(east) || !isValidCoordinate(west)}
             >
                 <Maximize size={18} className="mr-2" />
                 Zoom to Region
