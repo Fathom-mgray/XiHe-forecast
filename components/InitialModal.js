@@ -80,7 +80,7 @@ const InitialModal = React.memo(({ isOpen, onClose, onSubmit }) => {
                 </button>
 
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold">Welcome to Data-driven Ocean Forecast  by Fathom Science!</h1>
+                    <h1 className="text-2xl font-bold">Welcome to Data-driven Ocean Forecast by Fathom Science!</h1>
                     <hr className="my-4 border-gray-300" />
                 </div>
                 <br/>

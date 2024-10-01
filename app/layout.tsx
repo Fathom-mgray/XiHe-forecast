@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: 'XiHe App',
+  title: 'Fathom OFS',
   description: 'An interactive map.',
 };
 
