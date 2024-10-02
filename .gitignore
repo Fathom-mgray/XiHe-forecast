@@ -47,3 +47,6 @@ __pycache__/
 # IDE-specific (if you're using any)
 .vscode/
 .idea/
+*.nc
+*.ipynb
+*/flask_env
