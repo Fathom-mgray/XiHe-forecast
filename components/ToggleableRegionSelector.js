@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import RegionSelector from './RegionSelector';
 
-const ToggleableRegionSelector = ({ onRegionSelect, onZoomToRegion }) => {
+const ToggleableRegionSelector = ({ depth, 
+    activeOverlay, 
+    baseDate, 
+    selectedDate,
+    onRegionSelect,
+    onZoomToRegion }) => {
     const [isVisible, setIsVisible] = useState(false);
 
     const toggleVisibility = () => {
@@ -68,8 +73,12 @@ const ToggleableRegionSelector = ({ onRegionSelect, onZoomToRegion }) => {
             
             <div className={`mt-4 ${isVisible ? 'block' : 'hidden'}`}>
                 <RegionSelector 
-                    onRegionSelect={onRegionSelect} 
+                    onRegionSelect={onRegionSelect}
                     onZoomToRegion={onZoomToRegion}
+                    depth={depth}
+                    activeOverlay={activeOverlay}
+                    baseDate={baseDate}
+                    selectedDate={selectedDate}
                 />
             </div>
         </div>

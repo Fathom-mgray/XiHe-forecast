@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useMapEvents, Popup, useMap, CircleMarker } from 'react-leaflet';
 import * as GeoTIFF from 'geotiff';
 
-const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }) => {
+const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay, onDataStatusChange }) => {
     const [layerData, setLayerData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [dataAvailable, setDataAvailable] = useState(false);
@@ -47,6 +47,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
     const fetchWCSData = useCallback(async () => {
         setLoading(true);
         setDataAvailable(false);
+        onDataStatusChange({ loading: true, dataAvailable: false });
         try {
             const targetUrl = `http://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`;
             
@@ -89,15 +90,17 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
                 pixelHeight
             });
             setDataAvailable(true);
+            onDataStatusChange({ loading: false, dataAvailable: true });
 
             console.log("Fifth layer data extracted.");
         } catch (error) {
             console.error("Error fetching WCS data:", error);
             setLayerData(null);
+            onDataStatusChange({ loading: false, dataAvailable: false });
         } finally {
             setLoading(false);
         }
-    }, [layerName]);
+    }, [layerName, onDataStatusChange]);
 
     useEffect(() => {
         fetchWCSData();
@@ -179,35 +182,8 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay }
         return `${formattedValue} ${unit}`;
     };
 
-    const messageStyle = {
-        position: 'fixed',
-        top: '135px',
-        left: '10px',
-        backgroundColor: 'white',
-        padding: '10px',
-        // borderRadius: '4px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        zIndex: 1000,
-        width: '200px',
-        textAlign: 'center'
-    };
-
     return (
         <>
-            {loading && (
-                <div className='rounded-full font-semibold' style={messageStyle}>
-                    Loading data...
-                </div>
-            )}
-            {!loading && dataAvailable && (
-                <div 
-                    className='rounded-full font-semibold'
-                    style={{...messageStyle, cursor: 'pointer'}}
-                    onClick={() => console.log("Data is available. Implement view action here.")}
-                >
-                    Data available. Tap anywhere.
-                </div>
-            )}
             {clickedPoint && (
                 <>
                     <CircleMarker 
