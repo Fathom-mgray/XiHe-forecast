@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file, make_response, after_this_request
 import os
 import fsspec
 from dotenv import load_dotenv
@@ -6,9 +6,13 @@ from flask_cors import CORS
 import logging
 import json
 from datetime import datetime, timedelta
+import xarray as xr
+from fsspec.implementations.reference import LazyReferenceMapper, ReferenceFileSystem
+import io
+import tempfile
 
 # Load environment variables from .env file
-# load_dotenv()
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -70,6 +74,53 @@ def get_json_data():
     except Exception as e:
         logging.error(f"Error retrieving JSON data: {str(e)}")
         return jsonify({"status": "error", "message": f"Failed to retrieve JSON data: {str(e)}"}), 500
+
+@app.route('/download-data', methods = ['GET'])
+def download_data():
+    
+    s3_url = "s3://fathom-xihe-app/XiHe_model_outputs/combined.parq"
+    fs = ReferenceFileSystem(
+        s3_url,
+        remote_protocol="s3",
+        target_protocol="s3",
+        lazy=True,
+        key=os.environ['AWS_ACCESS_KEY_ID'], secret=os.environ['AWS_SECRET_ACCESS_KEY']
+    )
+    ds = xr.open_dataset(
+        fs.get_mapper(), engine="zarr", backend_kwargs={"consolidated": False}, decode_times=False
+    )
+    print(request.args.get('baseDate'))
+    left_lon = min(int(request.args.get('west')), int(request.args.get('east')))
+    right_lon = max(int(request.args.get('west')), int(request.args.get('east')))
+    top_lat = max(int(request.args.get('south')), int(request.args.get('north')))
+    bottom_lat = min(int(request.args.get('south')), int(request.args.get('north')))
+    ds_var = ds[request.args.get('overlayType')].sel(time = request.args.get('baseDate'), longitude = slice(left_lon, right_lon), latitude = slice(bottom_lat, top_lat), lead_day = int(request.args.get('dateDifference')))
+    if 'depth' in ds_var.dims:
+        ds_var = ds.isel(depth = int(request.args.get('depth')))
+    ds_var = ds_var.drop_vars('time') 
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.nc') as tmp_file:
+        tmp_filename = tmp_file.name  # Get the name of the temporary file
+        
+        # Write the xarray dataset to the temporary file
+        ds_var.to_netcdf(tmp_filename, mode='w')  # Specify format if needed
+
+    # Send the temporary file as a response
+    response = send_file(tmp_filename, as_attachment=True, download_name='dataset_final.nc', mimetype='application/x-netcdf')
+
+    # Cleanup: Remove the temporary file after sending the response
+    @after_this_request
+    def cleanup(response):
+        try:
+            os.remove(tmp_filename)
+        except Exception as e:
+            app.logger.error("Error removing temporary file: %s", e)
+        return response
+
+    return response
+    # Send the buffer as a file download
+    # return send_file(buffer, as_attachment=True, download_name='dataset.nc', mimetype='application/x-netcdf')
+    
+
 
 if __name__ == "__main__":
     app.run(debug=True)
