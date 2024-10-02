@@ -49,4 +49,4 @@ __pycache__/
 .idea/
 *.nc
 *.ipynb
-*/flask_env
+/new_env

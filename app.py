@@ -100,12 +100,32 @@ def download_data():
     ds_var = ds_var.drop_vars('time') 
     with tempfile.NamedTemporaryFile(delete=False, suffix='.nc') as tmp_file:
         tmp_filename = tmp_file.name  # Get the name of the temporary file
-        
         # Write the xarray dataset to the temporary file
         ds_var.to_netcdf(tmp_filename, mode='w')  # Specify format if needed
+    
+    if left_lon < 0:
+        left_lon_name = f"{abs(left_lon)}w"
+    else:
+        left_lon_name = f"{left_lon}e"
 
+    if right_lon < 0:
+        right_lon_name = f"{abs(right_lon)}w"
+    else:
+        right_lon_name = f"{right_lon}e"
+    if top_lat < 0:
+        top_lat_name = f"{abs(top_lat)}s"
+    else:
+        top_lat_name = f"{top_lat}n"
+    if bottom_lat < 0:
+        bottom_lat_name = f"{abs(bottom_lat)}s"
+    else:
+        bottom_lat_name = f"{bottom_lat}n"
+    
+
+    download_name = f"date_init_{request.args.get('baseDate')}_leadday_{request.args.get('dateDifference')}_var_{request.args.get('overlayType')}_depth_{request.args.get('depth')}_east_{right_lon_name}_west_{left_lon_name}_north_{top_lat_name}_south_{bottom_lat_name}.nc"
     # Send the temporary file as a response
-    response = send_file(tmp_filename, as_attachment=True, download_name='dataset_final.nc', mimetype='application/x-netcdf')
+    print(download_name)
+    response = send_file(tmp_filename, as_attachment=True, download_name=download_name, mimetype='application/x-netcdf')
 
     # Cleanup: Remove the temporary file after sending the response
     @after_this_request
