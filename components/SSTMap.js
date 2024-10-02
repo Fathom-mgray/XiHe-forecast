@@ -33,8 +33,31 @@ const SSTMap = () => {
     const [initialCenter, setInitialCenter] = useState([25, -90]);
     const [initialZoom, setInitialZoom] = useState(3);
     const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
+    const [dataStatus, setDataStatus] = useState({ loading: false, dataAvailable: false });
+
+    const handleDataStatusChange = useCallback((status) => {
+        setDataStatus(status);
+    }, []);
+
+    const messageStyle = {
+        position: 'fixed',
+        top: '135px',
+        left: '10px',
+        backgroundColor: 'white',
+        padding: '10px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        zIndex: 1000,
+        width: '200px',
+        textAlign: 'center'
+    };
+
+    
 
     const mapRef = useRef(null);
+
+    const handleTemperatureData = useCallback((message) => {
+        setTemperatureMessage(message);
+    }, []);
 
     const mapLayers = {
         default: {
@@ -213,11 +236,12 @@ const SSTMap = () => {
                             />
                         </Pane>
                         <Pane name="temperature-data" style={{ zIndex: 500 }}>
-                            <TemperatureDataHandler 
+                        <TemperatureDataHandler 
                                 selectedDate={selectedDate}
                                 baseDate={baseDate}
                                 depth={depth}
                                 activeOverlay={activeOverlay}
+                                onDataStatusChange={handleDataStatusChange}
                             />
                         </Pane>
                         {renderRectangle()}
@@ -273,10 +297,14 @@ const SSTMap = () => {
                         imageSrc="/images/salt.png" 
                         name="Salinity"
                     />
-                    <ToggleableRegionSelector 
-                        onRegionSelect={handleRegionSelect} 
-                        onZoomToRegion={handleZoomToRegion} 
-                    />
+                    <ToggleableRegionSelector
+                depth={depth}
+                activeOverlay={activeOverlay}
+                baseDate={baseDate}
+                selectedDate={selectedDate}
+                onRegionSelect={handleRegionSelect}
+                onZoomToRegion={handleZoomToRegion}
+            />
                 </div>
                 <div style={{
                     position: 'absolute',
@@ -309,6 +337,21 @@ const SSTMap = () => {
                         <LegendComponent activeOverlay={activeOverlay} />
                     </div>
                 </div>
+                {/* Add the message box */}
+                {dataStatus.loading && (
+                    <div className='rounded-full font-semibold text-xs' style={messageStyle}>
+                        Loading data...
+                    </div>
+                )}
+                {!dataStatus.loading && dataStatus.dataAvailable && (
+                    <div 
+                        className='rounded-full font-semibold text-xs'
+                        style={{...messageStyle, cursor: 'pointer'}}
+                        onClick={() => console.log("Data is available. Implement view action here.")}
+                    >
+                        Data available. Tap anywhere.
+                    </div>
+                )}
                 <InitialModal
                     isOpen={showInitialModal}
                     onClose={handleCloseInitialModal}
