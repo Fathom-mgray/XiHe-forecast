@@ -21,25 +21,25 @@ const SSTMap = () => {
 
     const [clickedPoint, setClickedPoint] = useState(null);
 
-    // const handleMapClick = useCallback(async (e) => {
-    //     const { lat, lng } = e.latlng;
-    //     try {
-    //         const response = await fetch(`http://127.0.0.1:5000/temperature_at_point?lat=${lat}&lon=${lng}`);
-    //         if (!response.ok) {
-    //             throw new Error('Failed to fetch temperature data');
-    //         }
-    //         const data = await response.json();
-    //         setClickedPoint({ 
-    //             lat, 
-    //             lng, 
-    //             temperature: data.temperature,
-    //             error: data.error // Include this to handle potential error messages from the API
-    //         });
-    //     } catch (error) {
-    //         console.error('Error fetching temperature data:', error);
-    //         setClickedPoint({ lat, lng, error: 'Failed to fetch temperature data' });
-    //     }
-    // }, []);
+    const handleMapClick = useCallback(async (e) => {
+        const { lat, lng } = e.latlng;
+        try {
+            const response = await fetch(`http://127.0.0.1:5000/temperature_at_point?lat=${lat}&lon=${lng}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch temperature data');
+            }
+            const data = await response.json();
+            setClickedPoint({ 
+                lat, 
+                lng, 
+                temperature: data.temperature,
+                error: data.error // Include this to handle potential error messages from the API
+            });
+        } catch (error) {
+            console.error('Error fetching temperature data:', error);
+            setClickedPoint({ lat, lng, error: 'Failed to fetch temperature data' });
+        }
+    }, []);
 
     const ClickableMapLayer = () => {
         const map = useMap();
@@ -315,14 +315,14 @@ const SSTMap = () => {
                         {renderRectangle()}
 
 
-                        {/* <ClickableMapLayer />
+                        <ClickableMapLayer />
     
                         {clickedPoint && (
                             <TemperaturePopup 
                                 point={clickedPoint} 
                                 onClose={() => setClickedPoint(null)} 
-                            /> */}
-                        )}
+                            />
+                        )};
                     </MapContainer>
                 )}
                 <div style={{ 
