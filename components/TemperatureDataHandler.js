@@ -49,7 +49,7 @@ const TemperatureDataHandler = ({ selectedDate, baseDate, depth, activeOverlay, 
         setDataAvailable(false);
         onDataStatusChange({ loading: true, dataAvailable: false });
         try {
-            const targetUrl = `http://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`;
+            const targetUrl = `https://34.229.93.55:8080/geoserver/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${layerName}&format=image/tiff&subset=Long(-180,180)&subset=Lat(-90,90)`;
             
             const response = await fetch('/api/proxy', {
                 method: 'POST',

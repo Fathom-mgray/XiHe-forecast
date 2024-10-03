@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Pane, Rectangle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane, Rectangle, useMap, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import WMSOverlayLayers from './WMSOverlayLayers';
 import TemperatureDataHandler from './TemperatureDataHandler';
@@ -15,6 +15,73 @@ import InitialModal from './InitialModal';
 import RectangleWithCloseButton from './RectangleWithCloseButton';
 
 const SSTMap = () => {
+
+
+    // Postgis pop-up starts 
+
+    const [clickedPoint, setClickedPoint] = useState(null);
+
+    const handleMapClick = useCallback(async (e) => {
+        const { lat, lng } = e.latlng;
+        try {
+            const response = await fetch(`http://127.0.0.1:5000/temperature_at_point?lat=${lat}&lon=${lng}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch temperature data');
+            }
+            const data = await response.json();
+            setClickedPoint({ 
+                lat, 
+                lng, 
+                temperature: data.temperature,
+                error: data.error // Include this to handle potential error messages from the API
+            });
+        } catch (error) {
+            console.error('Error fetching temperature data:', error);
+            setClickedPoint({ lat, lng, error: 'Failed to fetch temperature data' });
+        }
+    }, []);
+
+    const ClickableMapLayer = () => {
+        const map = useMap();
+        
+        useEffect(() => {
+            map.on('click', handleMapClick);
+            return () => {
+                map.off('click', handleMapClick);
+            };
+        }, [map, handleMapClick]);
+    
+        return null;
+    };
+
+    const TemperaturePopup = ({ point, onClose }) => {
+        if (!point) return null;
+    
+        return (
+            <Popup position={[point.lat, point.lng]} onClose={onClose}>
+                <div>
+                    <h3>Temperature Data</h3>
+                    <p>Latitude: {point.lat.toFixed(4)}</p>
+                    <p>Longitude: {point.lng.toFixed(4)}</p>
+                    {point.temperature !== undefined ? (
+                        <p>Temperature: {point.temperature.toFixed(2)}°C</p>
+                    ) : (
+                        <p>Error: {point.error}</p>
+                    )}
+                </div>
+            </Popup>
+        );
+    };
+
+
+
+
+
+
+    // Postgis pop-up ends 
+
+
+
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
     const [showModal, setShowModal] = useState(true);
@@ -236,15 +303,26 @@ const SSTMap = () => {
                             />
                         </Pane>
                         <Pane name="temperature-data" style={{ zIndex: 500 }}>
-                        <TemperatureDataHandler 
+
+                        {/* <TemperatureDataHandler 
                                 selectedDate={selectedDate}
                                 baseDate={baseDate}
                                 depth={depth}
                                 activeOverlay={activeOverlay}
                                 onDataStatusChange={handleDataStatusChange}
-                            />
+                            /> */}
                         </Pane>
                         {renderRectangle()}
+
+
+                        <ClickableMapLayer />
+    
+                        {clickedPoint && (
+                            <TemperaturePopup 
+                                point={clickedPoint} 
+                                onClose={() => setClickedPoint(null)} 
+                            />
+                        )}
                     </MapContainer>
                 )}
                 <div style={{ 

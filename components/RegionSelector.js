@@ -58,11 +58,13 @@ const RegionSelector = React.memo(({
 
             setIsLoading(true);
 
-            fetch(`http://3.86.139.48:5000/download-data?${requestParams.toString()}`)
+            fetch(`https://3.86.139.48:5000/download-data?${requestParams.toString()}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
+                    const fileName = response.headers;
+                    console.log(fileName)
                     return response.blob();
                 })
                 .then(blob => {
