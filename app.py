@@ -144,5 +144,5 @@ def download_data():
 
 
 if __name__ == "__main__":
-    app.run(ssl_context=('cert.pem', 'key.pem'), debug=True)
-
+#    app.run(ssl_context=('./certs/fullchain.pem', './certs/privkey.pem'), debug=True)
+    app.run(debug=True)
