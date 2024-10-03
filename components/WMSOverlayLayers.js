@@ -34,7 +34,7 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     }, [leadDay, depth, baseDateObj, overlayType]);
 
     useEffect(() => {
-        const url = `https://34.229.93.55:8080/geoserver/wms?service=WMS&version=1.1.0&request=GetMap&layers=${layerName}&format=image/png&transparent=true`;
+        const url = `http://34.229.93.55:8080/geoserver/wms?service=WMS&version=1.1.0&request=GetMap&layers=${layerName}&format=image/png&transparent=true`;
         console.log('WMS URL:', url);
     }, [layerName]);
 
@@ -45,7 +45,7 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     return (
         <WMSTileLayer
             key={layerName}
-            url="https://34.229.93.55:8080/geoserver/wms"
+            url="http://34.229.93.55:8080/geoserver/wms"
             layers={layerName}
             format="image/png"
             transparent={true}
