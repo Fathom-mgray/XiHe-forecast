@@ -125,7 +125,7 @@ def download_data():
     download_name = f"date_init_{request.args.get('baseDate')}_leadday_{request.args.get('dateDifference')}_var_{request.args.get('overlayType')}_depth_{request.args.get('depth')}_east_{right_lon_name}_west_{left_lon_name}_north_{top_lat_name}_south_{bottom_lat_name}.nc"
     # Send the temporary file as a response
     print(download_name)
-    response = send_file(tmp_filename, as_attachment=True, attachment_filename=download_name, mimetype='application/x-netcdf')
+    response = send_file(tmp_filename, as_attachment=True, download_name=download_name, mimetype='application/x-netcdf')
 
     # Cleanup: Remove the temporary file after sending the response
     @after_this_request
