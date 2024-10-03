@@ -136,6 +136,7 @@ def download_data():
             app.logger.error("Error removing temporary file: %s", e)
         return response
     response.headers['file-name'] = download_name
+    print(response.headers)
     return response
     # Send the buffer as a file download
     # return send_file(buffer, as_attachment=True, download_name='dataset.nc', mimetype='application/x-netcdf')
@@ -143,4 +144,5 @@ def download_data():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(ssl_context=('cert.pem', 'key.pem'), debug=True)
+
