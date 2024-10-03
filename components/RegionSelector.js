@@ -55,9 +55,23 @@ const RegionSelector = React.memo(({
                 dateDifference: dateDifference.toString(),
                 depth: depth.toString()
             });
-
+    
+            // Format coordinates for filename
+            const formatCoordinate = (value, isLatitude) => {
+                const absValue = Math.abs(parseFloat(value));
+                const direction = isLatitude 
+                    ? (parseFloat(value) >= 0 ? 'N' : 'S')
+                    : (parseFloat(value) >= 0 ? 'E' : 'W');
+                return `${Math.floor(absValue)}${direction}`;
+            };
+    
+            const northStr = formatCoordinate(north, true);
+            const southStr = formatCoordinate(south, true);
+            const eastStr = formatCoordinate(east, false);
+            const westStr = formatCoordinate(west, false);
+    
             setIsLoading(true);
-
+    
             fetch(`http://107.21.74.68:5000/download-data?${requestParams.toString()}`)
                 .then(response => {
                     if (!response.ok) {
@@ -70,14 +84,20 @@ const RegionSelector = React.memo(({
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'dataset_final.nc';
+                    
+                    const initDate = requestParams.get('baseDate').replace(/-/g, '');
+                    const leadDay = requestParams.get('dateDifference').padStart(2, '0');
+                    const depthStr = requestParams.get('depth').padStart(2, '0');
+                    const varName = requestParams.get('overlayType').toUpperCase();
+    
+                    a.download = `init${initDate}_lead${leadDay}_depth${depthStr}_var${varName}_${northStr}_${southStr}_${westStr}_${eastStr}.nc`;
+                    
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
                 })
                 .catch(error => {
                     console.error('Download failed:', error);
-                    // You might want to add some user-facing error handling here
                 })
                 .finally(() => {
                     setIsLoading(false);
