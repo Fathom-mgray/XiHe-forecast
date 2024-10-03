@@ -58,7 +58,7 @@ const RegionSelector = React.memo(({
 
             setIsLoading(true);
 
-            fetch(`https://3.86.139.48:5000/download-data?${requestParams.toString()}`)
+            fetch(`https://ofs.fathomscience.com:5000/download-data?${requestParams.toString()}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
