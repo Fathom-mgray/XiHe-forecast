@@ -135,7 +135,7 @@ def download_data():
         except Exception as e:
             app.logger.error("Error removing temporary file: %s", e)
         return response
-
+    response.headers['file-name'] = download_name
     return response
     # Send the buffer as a file download
     # return send_file(buffer, as_attachment=True, download_name='dataset.nc', mimetype='application/x-netcdf')
