@@ -58,7 +58,7 @@ const RegionSelector = React.memo(({
 
             setIsLoading(true);
 
-            fetch(`http://107.21.74.68:5000/download-data?${requestParams.toString()}`)
+            fetch(`http://98.81.212.199:5000/download-data?${requestParams.toString()}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -118,6 +118,7 @@ const RegionSelector = React.memo(({
                     onChange={handleChange}
                     className="w-full h-full bg-gray-700 text-white rounded-full text-center text-sm font-semibold focus:outline-none border border-white shadow-md"
                 />
+
                 {vertical ? (
                     <>
                         <button type="button" onClick={handleIncrement} className="absolute top-0 left-0 right-0 h-5 flex items-center justify-center">
