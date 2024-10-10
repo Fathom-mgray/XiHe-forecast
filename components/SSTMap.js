@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Pane, Rectangle, useMap, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import WMSOverlayLayers from './WMSOverlayLayers';
-import TemperatureDataHandler from './TemperatureDataHandler';
 import ToggleButton from './ToggleButton';
 import NavBar from './Navbar';
 import SliderComponent from './SliderComponent';
@@ -13,79 +12,16 @@ import './MapStyles.css';
 import MapStyleSelector from './MapStyleSelector';
 import InitialModal from './InitialModal';
 import RectangleWithCloseButton from './RectangleWithCloseButton';
+import TemperaturePopup from './TemperaturePopup';
+import LeadDaysResults from './LeadDaysResults';
 
 const SSTMap = () => {
-
-
-    // Postgis pop-up starts 
-
-    const [clickedPoint, setClickedPoint] = useState(null);
-
-    const handleMapClick = useCallback(async (e) => {
-        const { lat, lng } = e.latlng;
-        try {
-            const response = await fetch(`http://127.0.0.1:5000/temperature_at_point?lat=${lat}&lon=${lng}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch temperature data');
-            }
-            const data = await response.json();
-            setClickedPoint({ 
-                lat, 
-                lng, 
-                temperature: data.temperature,
-                error: data.error // Include this to handle potential error messages from the API
-            });
-        } catch (error) {
-            console.error('Error fetching temperature data:', error);
-            setClickedPoint({ lat, lng, error: 'Failed to fetch temperature data' });
-        }
-    }, []);
-
-    const ClickableMapLayer = () => {
-        const map = useMap();
-        
-        useEffect(() => {
-            map.on('click', handleMapClick);
-            return () => {
-                map.off('click', handleMapClick);
-            };
-        }, [map, handleMapClick]);
-    
-        return null;
-    };
-
-    const TemperaturePopup = ({ point, onClose }) => {
-        if (!point) return null;
-    
-        return (
-            <Popup position={[point.lat, point.lng]} onClose={onClose}>
-                <div>
-                    <h3>Temperature Data</h3>
-                    <p>Latitude: {point.lat.toFixed(4)}</p>
-                    <p>Longitude: {point.lng.toFixed(4)}</p>
-                    {point.temperature !== undefined ? (
-                        <p>Temperature: {point.temperature.toFixed(2)}°C</p>
-                    ) : (
-                        <p>Error: {point.error}</p>
-                    )}
-                </div>
-            </Popup>
-        );
-    };
-
-
-
-
-
-
-    // Postgis pop-up ends 
-
-
-
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
     const [showModal, setShowModal] = useState(true);
-    
+    const [showLeadDaysResults, setShowLeadDaysResults] = useState(false);
+    const [leadDaysData, setLeadDaysData] = useState([]);
+
     // Set the initial dates to yesterday
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -102,6 +38,8 @@ const SSTMap = () => {
     const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
     const [dataStatus, setDataStatus] = useState({ loading: false, dataAvailable: false });
 
+    const mapRef = useRef(null);
+
     const handleDataStatusChange = useCallback((status) => {
         setDataStatus(status);
     }, []);
@@ -117,14 +55,6 @@ const SSTMap = () => {
         width: '200px',
         textAlign: 'center'
     };
-
-    
-
-    const mapRef = useRef(null);
-
-    const handleTemperatureData = useCallback((message) => {
-        setTemperatureMessage(message);
-    }, []);
 
     const mapLayers = {
         default: {
@@ -232,6 +162,21 @@ const SSTMap = () => {
         }
     }, []);
 
+    const handleToggleLeadDaysResults = useCallback((data) => {
+        console.log("Toggling lead days results. Current state:", showLeadDaysResults, "New data:", data);
+        setShowLeadDaysResults(prev => !prev);
+        if (data) {
+            setLeadDaysData(data);
+        }
+    }, [showLeadDaysResults]);
+
+    useEffect(() => {
+        console.log("SSTMap rendered. showLeadDaysResults:", showLeadDaysResults, "leadDaysData:", leadDaysData);
+    }, [showLeadDaysResults, leadDaysData]);
+
+
+
+
     useEffect(() => {
         if (mapRef.current) {
             const map = mapRef.current;
@@ -302,27 +247,14 @@ const SSTMap = () => {
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                             />
                         </Pane>
-                        <Pane name="temperature-data" style={{ zIndex: 500 }}>
-
-                        <TemperatureDataHandler 
-                                selectedDate={selectedDate}
-                                baseDate={baseDate}
-                                depth={depth}
-                                activeOverlay={activeOverlay}
-                                onDataStatusChange={handleDataStatusChange}
-                            />
-                        </Pane>
                         {renderRectangle()}
+                        <TemperaturePopup 
+                            baseDate={baseDate}
+                            selectedDate={selectedDate}
+                            activeOverlay={activeOverlay}
+                            onToggleLeadDaysResults={handleToggleLeadDaysResults}
+                        />
 
-
-                        <ClickableMapLayer />
-    
-                        {clickedPoint && (
-                            <TemperaturePopup 
-                                point={clickedPoint} 
-                                onClose={() => setClickedPoint(null)} 
-                            />
-                        )};
                     </MapContainer>
                 )}
                 <div style={{ 
@@ -376,46 +308,66 @@ const SSTMap = () => {
                         name="Salinity"
                     />
                     <ToggleableRegionSelector
-                depth={depth}
-                activeOverlay={activeOverlay}
-                baseDate={baseDate}
-                selectedDate={selectedDate}
-                onRegionSelect={handleRegionSelect}
-                onZoomToRegion={handleZoomToRegion}
-            />
-                </div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '0px',
-                    left: '20px',
-                    zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                }}>
-                    <SliderComponent 
-                        onDateChange={handleDateChange}
-                        onBaseDateChange={handleBaseDateChange}
-                        onDepthChange={handleDepthChange}
+                        depth={depth}
                         activeOverlay={activeOverlay}
                         baseDate={baseDate}
                         selectedDate={selectedDate}
+                        onRegionSelect={handleRegionSelect}
+                        onZoomToRegion={handleZoomToRegion}
                     />
                 </div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '0px',
-                    right: '2px',
-                    zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                }}>
-                    <div style={{ marginTop: '10px' }}>
-                        <LegendComponent activeOverlay={activeOverlay} />
+                {!showLeadDaysResults && (
+                    <>
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '0px',
+                            left: '20px',
+                            zIndex: 1000,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                        }}>
+                            <SliderComponent 
+                                onDateChange={handleDateChange}
+                                onBaseDateChange={handleBaseDateChange}
+                                onDepthChange={handleDepthChange}
+                                activeOverlay={activeOverlay}
+                                baseDate={baseDate}
+                                selectedDate={selectedDate}
+                            />
+                        </div>
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '0px',
+                            right: '2px',
+                            zIndex: 1000,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                        }}>
+                            <div style={{ marginTop: '10px' }}>
+                                <LegendComponent activeOverlay={activeOverlay} />
+                            </div>
+                        </div>
+                    </>
+                )}
+                {/* {showLeadDaysResults && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '30vh',
+                        zIndex: 1000,
+                    }}>
+                        <LeadDaysResults results={leadDaysData} activeOverlay={activeOverlay} />
                     </div>
-                </div>
-                {/* Add the message box */}
+                )} */}
+                <LeadDaysResults 
+                    results={leadDaysData} 
+                    activeOverlay={activeOverlay} 
+                    isVisible={showLeadDaysResults}
+                />
                 {dataStatus.loading && (
                     <div className='rounded-full font-semibold text-xs' style={messageStyle}>
                         Loading data...
