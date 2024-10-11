@@ -3,6 +3,7 @@ import { useMap, Popup, CircleMarker } from 'react-leaflet';
 
 const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadDaysResults}) => {
     const [clickedPoint, setClickedPoint] = useState(null);
+    const [leadDaysData, setLeadDaysData] = useState(null);
     const map = useMap();
     const popupRef = useRef(null);
 
@@ -37,7 +38,28 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
             const data = await response.json();
             console.log('Temperature data:', data);
 
-            // Fetch lead days data
+            setClickedPoint({
+                lat,
+                lng,
+                value: data.temperature,
+                error: data.error
+            });
+
+            if (popupRef.current) {
+                popupRef.current.openOn(map);
+            }
+
+            // Fetch lead days data asynchronously
+            fetchLeadDaysData(lat, lng, formattedBaseDate);
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setClickedPoint({ lat, lng, error: 'Failed to fetch data' });
+        }
+    }, [map, baseDate, selectedDate, activeOverlay]);
+
+    const fetchLeadDaysData = async (lat, lng, formattedBaseDate) => {
+        try {
             const leadDaysResponse = await fetch(`http://127.0.0.1:5000/get_all_lead_days?lat=${lat}&lon=${lng}&base_date=${formattedBaseDate}&overlay=${activeOverlay}`);
             
             if (!leadDaysResponse.ok) {
@@ -46,23 +68,12 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
 
             const leadDaysData = await leadDaysResponse.json();
             console.log('Lead days data:', leadDaysData);
-
-            setClickedPoint({
-                lat,
-                lng,
-                value: data.temperature,
-                error: data.error,
-                leadDaysData: leadDaysData.data_values
-            });
-
-            if (popupRef.current) {
-                popupRef.current.openOn(map);
-            }
+            setLeadDaysData(leadDaysData.data_values);
         } catch (error) {
-            console.error('Error fetching data:', error);
-            setClickedPoint({ lat, lng, error: 'Failed to fetch data' });
+            console.error('Error fetching lead days data:', error);
+            // Don't update clickedPoint or show error for lead days data
         }
-    }, [map, baseDate, selectedDate, activeOverlay]);
+    };
 
     useEffect(() => {
         map.on('click', handleMapClick);
@@ -73,16 +84,17 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
 
     const handleClosePopup = () => {
         setClickedPoint(null);
+        setLeadDaysData(null);
         if (popupRef.current && popupRef.current._source) {
             popupRef.current._source.remove();
         }
-        onToggleLeadDaysResults(null); // Close lead days results when closing popup
+        onToggleLeadDaysResults(null);
     };
 
     const handleToggleLeadDays = () => {
-        if (clickedPoint && clickedPoint.leadDaysData) {
-            console.log("Toggling lead days, data:", clickedPoint.leadDaysData);
-            onToggleLeadDaysResults(clickedPoint.leadDaysData);
+        if (leadDaysData) {
+            console.log("Toggling lead days, data:", leadDaysData);
+            onToggleLeadDaysResults(leadDaysData);
         } else {
             console.log("No lead days data available");
         }
@@ -111,15 +123,6 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
         const formattedValue = Number(value).toFixed(2);
         return `${formattedValue} ${unit}`;
     };
-
-    // const handleToggleLeadDays = () => {
-    //     if (clickedPoint && clickedPoint.leadDaysData) {
-    //         console.log("Toggling lead days, data:", clickedPoint.leadDaysData);
-    //         onToggleLeadDaysResults(clickedPoint.leadDaysData);
-    //     } else {
-    //         console.log("No lead days data available");
-    //     }
-    // };
 
     if (!clickedPoint) return null;
 
@@ -160,13 +163,14 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
                             <div className='ml-10'>
                                 {clickedPoint.error ? 'Error' : formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
                             </div>
-                            <button onClick={handleToggleLeadDays}>
+                            <button onClick={handleToggleLeadDays} disabled={!leadDaysData}>
                                 <svg 
                                     xmlns="http://www.w3.org/2000/svg" 
                                     className="h-5 w-5" 
                                     fill="none" 
                                     viewBox="0 0 24 24" 
                                     stroke="white"
+                                    opacity={leadDaysData ? 1 : 0.5}
                                 >
                                     <path 
                                         strokeLinecap="round" 

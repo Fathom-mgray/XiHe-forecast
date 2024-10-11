@@ -177,9 +177,9 @@ const SSTMap = () => {
         }
     }, [showLeadDaysResults]);
 
-    useEffect(() => {
-        console.log("SSTMap rendered. showLeadDaysResults:", showLeadDaysResults, "leadDaysData:", leadDaysData);
-    }, [showLeadDaysResults, leadDaysData]);
+    const handleCloseLeadDaysResults = useCallback(() => {
+        setShowLeadDaysResults(false);
+    }, []);
 
 
 
@@ -240,23 +240,23 @@ const SSTMap = () => {
                             url={mapLayers[selectedMapLayer].url}
                             attribution={mapLayers[selectedMapLayer].attribution}
                         />
-                        {/* <Pane name="data-visualization" style={{ zIndex: 300 }}>
+                        <Pane name="data-visualization" style={{ zIndex: 300 }}>
                             <WMSOverlayLayers 
                                 selectedDate={selectedDate}
                                 baseDate={baseDate}
                                 depth={depth}
                                 activeOverlay={activeOverlay}
                             />
-                        </Pane> */}
+                        </Pane>
                         <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
                             <TileLayer
                                 url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                             />
                         </Pane>
-                        <div className="App">
+                        {/* <div className="App">
                         <AnimatedMapLayer bounds={imageBounds} opacity={1} interval={150} />
-                        </div>
+                        </div> */}
                         {renderRectangle()}
                         <TemperaturePopup 
                             baseDate={baseDate}
@@ -279,7 +279,7 @@ const SSTMap = () => {
                         handleMapLayerChange={handleMapLayerChange}
                     />
                 </div>
-                {/* <div style={{ 
+                <div style={{ 
                     position: 'absolute', 
                     top: '4rem', 
                     right: '10px', 
@@ -326,8 +326,8 @@ const SSTMap = () => {
                         onRegionSelect={handleRegionSelect}
                         onZoomToRegion={handleZoomToRegion}
                     />
-                </div> */}
-                {/* {!showLeadDaysResults && (
+                </div>
+                {!showLeadDaysResults && (
                     <>
                         <div style={{
                             position: 'absolute',
@@ -361,7 +361,7 @@ const SSTMap = () => {
                             </div>
                         </div>
                     </>
-                )} */}
+                )}
                 {/* {showLeadDaysResults && (
                     <div style={{
                         position: 'absolute',
@@ -378,6 +378,9 @@ const SSTMap = () => {
                     results={leadDaysData} 
                     activeOverlay={activeOverlay} 
                     isVisible={showLeadDaysResults}
+                    depth={depth}
+                    onClose={handleCloseLeadDaysResults}
+
                 />
                 {dataStatus.loading && (
                     <div className='rounded-full font-semibold text-xs' style={messageStyle}>
