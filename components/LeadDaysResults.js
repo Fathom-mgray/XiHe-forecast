@@ -25,7 +25,7 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible }) => {
     const chartData = useMemo(() => {
         return results?.map(result => ({
             leadDay: result.lead_day,
-            value: result.sst_value
+            value: result.data_value
         })) || [];
     }, [results]);
 

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMap, Popup, CircleMarker } from 'react-leaflet';
 
-const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadDaysResults }) => {
+const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadDaysResults}) => {
     const [clickedPoint, setClickedPoint] = useState(null);
     const map = useMap();
     const popupRef = useRef(null);
@@ -52,7 +52,7 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
                 lng,
                 value: data.temperature,
                 error: data.error,
-                leadDaysData: leadDaysData.sst_values
+                leadDaysData: leadDaysData.data_values
             });
 
             if (popupRef.current) {

@@ -14,6 +14,8 @@ import InitialModal from './InitialModal';
 import RectangleWithCloseButton from './RectangleWithCloseButton';
 import TemperaturePopup from './TemperaturePopup';
 import LeadDaysResults from './LeadDaysResults';
+import AnimatedMapLayer from './AnimatedMapLayer';
+
 
 const SSTMap = () => {
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
@@ -43,6 +45,11 @@ const SSTMap = () => {
     const handleDataStatusChange = useCallback((status) => {
         setDataStatus(status);
     }, []);
+
+    const imageBounds = [
+        [8.046585581289271, -98.95135746606363], // [lat_min, lon_min]
+        [46.96790500433101, -59.94004524882491]  // [lat_max, lon_max]
+      ];
 
     const messageStyle = {
         position: 'fixed',
@@ -233,26 +240,30 @@ const SSTMap = () => {
                             url={mapLayers[selectedMapLayer].url}
                             attribution={mapLayers[selectedMapLayer].attribution}
                         />
-                        <Pane name="data-visualization" style={{ zIndex: 300 }}>
+                        {/* <Pane name="data-visualization" style={{ zIndex: 300 }}>
                             <WMSOverlayLayers 
                                 selectedDate={selectedDate}
                                 baseDate={baseDate}
                                 depth={depth}
                                 activeOverlay={activeOverlay}
                             />
-                        </Pane>
+                        </Pane> */}
                         <Pane name="labels-and-outlines" style={{ zIndex: 400 }}>
                             <TileLayer
                                 url='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                             />
                         </Pane>
+                        <div className="App">
+                        <AnimatedMapLayer bounds={imageBounds} opacity={1} interval={150} />
+                        </div>
                         {renderRectangle()}
                         <TemperaturePopup 
                             baseDate={baseDate}
                             selectedDate={selectedDate}
                             activeOverlay={activeOverlay}
                             onToggleLeadDaysResults={handleToggleLeadDaysResults}
+                            // depth={depth}
                         />
 
                     </MapContainer>
@@ -268,7 +279,7 @@ const SSTMap = () => {
                         handleMapLayerChange={handleMapLayerChange}
                     />
                 </div>
-                <div style={{ 
+                {/* <div style={{ 
                     position: 'absolute', 
                     top: '4rem', 
                     right: '10px', 
@@ -315,8 +326,8 @@ const SSTMap = () => {
                         onRegionSelect={handleRegionSelect}
                         onZoomToRegion={handleZoomToRegion}
                     />
-                </div>
-                {!showLeadDaysResults && (
+                </div> */}
+                {/* {!showLeadDaysResults && (
                     <>
                         <div style={{
                             position: 'absolute',
@@ -350,7 +361,7 @@ const SSTMap = () => {
                             </div>
                         </div>
                     </>
-                )}
+                )} */}
                 {/* {showLeadDaysResults && (
                     <div style={{
                         position: 'absolute',
