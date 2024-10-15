@@ -1,6 +1,6 @@
 # Dockerfile.backend
 
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Set environment variables for Flask
 ENV FLASK_APP=app.py
@@ -22,5 +22,5 @@ COPY app.py ./
 EXPOSE 5000
 
 # Run the Flask application
-CMD ["bash", "-c", "python -m gunicorn -b 0.0.0.0:5000 --keyfile /etc/letsencrypt/live/ofs.fathomscience.com/privkey.pem --certfile /etc/letsencrypt/live/ofs.fathomscience.com/fullchain.pem app:app"]
-# CMD ["flask", "run", "--host=0.0.0.0", "--port=5000", "--cert=./certs/fullchain.pem", "--key=./certs/privkey.pem"]
+# CMD ["bash", "-c", "python -m gunicorn -b 0.0.0.0:5000 --keyfile /etc/letsencrypt/live/ofs.fathomscience.com/privkey.pem --certfile /etc/letsencrypt/live/ofs.fathomscience.com/fullchain.pem app:app"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

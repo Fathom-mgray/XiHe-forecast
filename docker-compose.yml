@@ -5,8 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "3000:3000"
     depends_on:
@@ -16,8 +14,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro 
     ports:
       - "5000:5000"
     environment:

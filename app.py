@@ -295,7 +295,7 @@ def get_all_lead_days():
 
 
 
-@app.route('/download-data', methods = ['GET'])
+@app.route('/download_data', methods = ['GET'])
 def download_data():
     
     s3_url = "s3://fathom-xihe-app/XiHe_model_outputs/combined.parq"
