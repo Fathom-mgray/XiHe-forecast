@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause } from 'lucide-react';
 
-const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, activeOverlay, baseDate: propBaseDate, selectedDate: propSelectedDate }) => {
+const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, activeOverlay, baseDate: propBaseDate, selectedDate: propSelectedDate, isLeadDaysVisible  }) => {
     const [sliderValue, setSliderValue] = useState([0]);
     const [baseDate, setBaseDate] = useState(propBaseDate || new Date());
     const [selectedDate, setSelectedDate] = useState(propSelectedDate || new Date());
@@ -143,7 +143,11 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
     };
 
     return (
-        <div className="fixed bottom-5 left-4 z-50 w-[75%] max-w-[85rem] space-y-4">
+        <div className={`
+        w-[75%] max-w-[85rem]  space-y-4
+        transition-all duration-300 ease-in-out
+         p-4  // Added background and padding for visibility
+    `}>
             <div className="flex flex-col items-start gap-2">
                 <div className={`
                     transition-all duration-300 ease-in-out

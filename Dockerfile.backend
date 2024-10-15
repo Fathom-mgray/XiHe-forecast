@@ -16,9 +16,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy Flask app code
 COPY app.py ./
 # COPY .env ./
-
+# COPY /etc/letsencrypt/live/ofs.fathomscience.com/fullchain.pem /app/cert.pem
+# COPY /etc/letsencrypt/live/ofs.fathomscience.com/privkey.pem /app/key.pem
 # Expose the Flask port
 EXPOSE 5000
 
 # Run the Flask application
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["bash", "-c", "python -m gunicorn -b 0.0.0.0:5000 --keyfile /etc/letsencrypt/live/ofs.fathomscience.com/privkey.pem --certfile /etc/letsencrypt/live/ofs.fathomscience.com/fullchain.pem app:app"]
+# CMD ["flask", "run", "--host=0.0.0.0", "--port=5000", "--cert=./certs/fullchain.pem", "--key=./certs/privkey.pem"]

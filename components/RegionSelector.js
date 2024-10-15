@@ -153,6 +153,7 @@ const RegionSelector = React.memo(({
                     onChange={handleChange}
                     className="w-full h-full bg-gray-700 text-white rounded-full text-center text-sm font-semibold focus:outline-none border border-white shadow-md"
                 />
+
                 {vertical ? (
                     <>
                         <button type="button" onClick={handleIncrement} className="absolute top-0 left-0 right-0 h-5 flex items-center justify-center">

@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Pane, Rectangle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import WMSOverlayLayers from './WMSOverlayLayers';
-import TemperatureDataHandler from './TemperatureDataHandler';
 import ToggleButton from './ToggleButton';
 import NavBar from './Navbar';
 import SliderComponent from './SliderComponent';
@@ -13,12 +12,19 @@ import './MapStyles.css';
 import MapStyleSelector from './MapStyleSelector';
 import InitialModal from './InitialModal';
 import RectangleWithCloseButton from './RectangleWithCloseButton';
+import TemperaturePopup from './TemperaturePopup';
+import LeadDaysResults from './LeadDaysResults';
+import AnimatedMapLayer from './AnimatedMapLayer';
+
 
 const SSTMap = () => {
     const [shouldRenderRectangle, setShouldRenderRectangle] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState('sst');
     const [showModal, setShowModal] = useState(true);
-    
+    const [showLeadDaysResults, setShowLeadDaysResults] = useState(false);
+    const [leadDaysData, setLeadDaysData] = useState([]);
+    const [clickedLocation, setClickedLocation] = useState(null);
+
     // Set the initial dates to yesterday
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -35,9 +41,16 @@ const SSTMap = () => {
     const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
     const [dataStatus, setDataStatus] = useState({ loading: false, dataAvailable: false });
 
+    const mapRef = useRef(null);
+
     const handleDataStatusChange = useCallback((status) => {
         setDataStatus(status);
     }, []);
+
+    const imageBounds = [
+        [8.046585581289271, -98.95135746606363], // [lat_min, lon_min]
+        [46.96790500433101, -59.94004524882491]  // [lat_max, lon_max]
+      ];
 
     const messageStyle = {
         position: 'fixed',
@@ -50,14 +63,6 @@ const SSTMap = () => {
         width: '200px',
         textAlign: 'center'
     };
-
-    
-
-    const mapRef = useRef(null);
-
-    const handleTemperatureData = useCallback((message) => {
-        setTemperatureMessage(message);
-    }, []);
 
     const mapLayers = {
         default: {
@@ -165,6 +170,24 @@ const SSTMap = () => {
         }
     }, []);
 
+    // And update your handleToggleLeadDaysResults function:
+    const handleToggleLeadDaysResults = useCallback((data) => {
+        console.log("Toggling lead days results. Current state:", showLeadDaysResults, "New data:", data);
+        if (data) {
+            setLeadDaysData(data);
+            setShowLeadDaysResults(true);
+        } else {
+            setShowLeadDaysResults(prev => !prev);
+        }
+    }, [showLeadDaysResults]);
+
+    const handleCloseLeadDaysResults = useCallback(() => {
+        setShowLeadDaysResults(false);
+    }, []);
+
+
+
+
     useEffect(() => {
         if (mapRef.current) {
             const map = mapRef.current;
@@ -210,7 +233,7 @@ const SSTMap = () => {
                     <MapContainer 
                         center={initialCenter}
                         zoom={initialZoom}
-                        style={{ height: "100vh", width: "100%" }}
+                        style={{ height: "100vh", width: "100%", zIndex: 1  }}
                         minZoom={2.34}
                         maxBounds={[[80, -180], [-75, 180]]}
                         maxBoundsViscosity={1.0}
@@ -235,16 +258,18 @@ const SSTMap = () => {
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                             />
                         </Pane>
-                        <Pane name="temperature-data" style={{ zIndex: 500 }}>
-                        <TemperatureDataHandler 
-                                selectedDate={selectedDate}
-                                baseDate={baseDate}
-                                depth={depth}
-                                activeOverlay={activeOverlay}
-                                onDataStatusChange={handleDataStatusChange}
-                            />
-                        </Pane>
+                        {/* <div className="App">
+                        <AnimatedMapLayer bounds={imageBounds} opacity={1} interval={150} />
+                        </div> */}
                         {renderRectangle()}
+                        <TemperaturePopup 
+                            baseDate={baseDate}
+                            selectedDate={selectedDate}
+                            activeOverlay={activeOverlay}
+                            onToggleLeadDaysResults={handleToggleLeadDaysResults}
+                            depth={depth}
+                        />
+
                     </MapContainer>
                 )}
                 <div style={{ 
@@ -298,46 +323,65 @@ const SSTMap = () => {
                         name="Salinity"
                     />
                     <ToggleableRegionSelector
-                depth={depth}
-                activeOverlay={activeOverlay}
-                baseDate={baseDate}
-                selectedDate={selectedDate}
-                onRegionSelect={handleRegionSelect}
-                onZoomToRegion={handleZoomToRegion}
-            />
-                </div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '0px',
-                    left: '20px',
-                    zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                }}>
-                    <SliderComponent 
-                        onDateChange={handleDateChange}
-                        onBaseDateChange={handleBaseDateChange}
-                        onDepthChange={handleDepthChange}
+                        depth={depth}
                         activeOverlay={activeOverlay}
                         baseDate={baseDate}
                         selectedDate={selectedDate}
+                        onRegionSelect={handleRegionSelect}
+                        onZoomToRegion={handleZoomToRegion}
                     />
                 </div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '0px',
-                    right: '2px',
-                    zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                }}>
-                    <div style={{ marginTop: '10px' }}>
-                        <LegendComponent activeOverlay={activeOverlay} />
+                {/* {!showLeadDaysResults && ( */}
+                
+                <div className={`
+    fixed left-4 right-4 z-[1001] // Increased z-index
+    transition-all duration-300 ease-in-out
+    ${showLeadDaysResults ? 'bottom-[calc(30vh+1.25rem)]' : 'bottom-5'}
+`}>
+    <SliderComponent 
+        onDateChange={handleDateChange}
+        onBaseDateChange={handleBaseDateChange}
+        onDepthChange={handleDepthChange}
+        activeOverlay={activeOverlay}
+        baseDate={baseDate}
+        selectedDate={selectedDate}
+        depth={depth}
+        isLeadDaysVisible={showLeadDaysResults}
+    />
+</div>
+<div className={`
+    fixed right-2 z-[1001]
+    transition-all duration-300 ease-in-out
+    ${showLeadDaysResults ? 'bottom-[calc(28vh+1.1rem)]' : 'bottom-1'}
+`}>
+    <div className="p-2 ">
+        <LegendComponent activeOverlay={activeOverlay} />
+    </div>
+</div>
+                
+                {/* )} */}
+                {/* {showLeadDaysResults && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '30vh',
+                        zIndex: 1000,
+                    }}>
+                        <LeadDaysResults results={leadDaysData} activeOverlay={activeOverlay} />
                     </div>
-                </div>
-                {/* Add the message box */}
+                )} */}
+               <LeadDaysResults 
+    results={leadDaysData} 
+    activeOverlay={activeOverlay} 
+    isVisible={showLeadDaysResults}
+    depth={depth}
+    onClose={handleCloseLeadDaysResults}
+    className="fixed bottom-0 left-0 right-0 z-[1000]" // Ensure it's below the slider but above the map
+/>
+
+
                 {dataStatus.loading && (
                     <div className='rounded-full font-semibold text-xs' style={messageStyle}>
                         Loading data...
