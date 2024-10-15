@@ -73,59 +73,50 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                 </button>
             </div>
             <div className="flex flex-1 overflow-hidden">
-                <div className="w-4/5 pr-4">
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="90%">
-                            <ComposedChart margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="date" 
-                                    type="category"
-                                    label={{ 
-                                        value: 'Date', 
-                                        position: 'bottom', 
-                                        offset: -10,  // Increased negative offset to move label up
-                                        fontSize: '0.8rem',
-                                        dy: -10  // Added negative dy to move label up
-                                    }}
-                                
-                                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
-                                    tickFormatter={(value) => value.slice(5)} // Display as MM-DD
-                                    height={60}
-                                />
-                                <YAxis 
-                                    domain={[minValue, maxValue]} 
-                                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
-                                    tickFormatter={(value) => value.toFixed(2)}
-                                    tick={{ fontSize: 10 }}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                {/* <Scatter 
-                                    data={chartData} 
-                                    fill={overlayConfig[activeOverlay].color}
-                                    name={`${overlayConfig[activeOverlay].name} (${overlayConfig[activeOverlay].unit})`} 
-                                    dataKey="value"
-                                /> */}
-                                <Line 
-                                    type="monotone"
-                                    dataKey="value"
-                                    data={chartData}
-                                    stroke={overlayConfig[activeOverlay].color}
-                                    strokeWidth={2}
-                                    dot={true}
-                                />
-                            </ComposedChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-full flex items-center justify-center text-sm">No data available</div>
-                    )}
-                    <div className="flex flex-row space-x-4">
-      <p className="text-sm">Hello</p>
-      <p className="text-sm">World</p>
-      <p className="text-sm">React</p>
-    </div>
+            <div className="w-4/5 pr-4">
+    {chartData.length > 0 ? (
+        <ResponsiveContainer width="100%" height="90%">
+            <ComposedChart margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                    dataKey="date" 
+                    type="category"
+                    label={{ 
+                        value: 'Date', 
+                        position: 'bottom', 
+                        offset: -10,  // Increased negative offset to move label up
+                        fontSize: '0.8rem',
+                        dy: -10  // Added negative dy to move label up
+                    }}
+                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
+                    tickFormatter={(value) => value.slice(5)} // Display as MM-DD
+                    height={60}
+                />
+                <YAxis 
+                    domain={[minValue, maxValue]} 
+                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
+                    tickFormatter={(value) => value.toFixed(2)}
+                    tick={{ fontSize: 10 }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                    type="monotone"
+                    dataKey="value"
+                    data={chartData}
+                    stroke={overlayConfig[activeOverlay].color}
+                    strokeWidth={2}
+                    dot={true}
+                />
+            </ComposedChart>
+        </ResponsiveContainer>
+    ) : (
+        <div className="h-full flex items-center justify-center text-sm">No data available</div>
+    )}
 
-                </div>
+    
+</div>
+
+                
                 <div className="w-1/5 pl-4 border-l overflow-y-auto">
                     <h3 className="text-lg font-bold mb-2">About</h3>
                     <ul className="text-xs space-y-2">

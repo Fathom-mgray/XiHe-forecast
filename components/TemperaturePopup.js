@@ -30,7 +30,7 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
 
         try {
             // API call with specific lead_day
-            const response = await fetch(`http://127.0.0.1:5000/get_at_point?lat=${lat}&lon=${lng}&date=${formattedBaseDate}&lead_day=${leadDay}&overlay=${activeOverlay}&depth=${depth}`);
+            const response = await fetch(`http://54.147.36.134:5000/get_at_point?lat=${lat}&lon=${lng}&date=${formattedBaseDate}&lead_day=${leadDay}&overlay=${activeOverlay}&depth=${depth}`);
             
             if (!response.ok) {
                 throw new Error('Failed to fetch temperature data');
@@ -62,7 +62,7 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
 
     const fetchLeadDaysData = async (lat, lng, formattedBaseDate) => {
         try {
-            const leadDaysResponse = await fetch(`http://127.0.0.1:5000/get_all_lead_days?lat=${lat}&lon=${lng}&base_date=${formattedBaseDate}&overlay=${activeOverlay}&depth=${depth}`);
+            const leadDaysResponse = await fetch(`http://54.147.36.134:5000/get_all_lead_days?lat=${lat}&lon=${lng}&base_date=${formattedBaseDate}&overlay=${activeOverlay}&depth=${depth}`);
             
             if (!leadDaysResponse.ok) {
                 throw new Error('Failed to fetch lead days data');
