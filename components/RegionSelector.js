@@ -35,57 +35,92 @@ const RegionSelector = React.memo(({
         }
     }, [north, south, east, west, onZoomToRegion]);
 
+
+
+
+
     const handleDownload = useCallback(() => {
         if (isValidCoordinate(north) && isValidCoordinate(south) && 
             isValidCoordinate(east) && isValidCoordinate(west)) {
             
             const currentDate = new Date();
             const effectiveBaseDate = baseDate instanceof Date ? baseDate : currentDate;
+            
             const effectiveSelectedDate = selectedDate instanceof Date ? selectedDate : currentDate;
-            
-            const dateDifference = Math.round((effectiveSelectedDate - effectiveBaseDate) / (1000 * 60 * 60 * 24));
-            
-            const requestParams = new URLSearchParams({
-                baseDate: effectiveBaseDate.toISOString().split('T')[0],
-                west: parseFloat(west),
-                east: parseFloat(east),
-                north: parseFloat(north),
-                south: parseFloat(south),
-                overlayType: activeOverlay,
-                dateDifference: dateDifference.toString(),
-                depth: depth.toString()
+            const lead = Math.round((effectiveSelectedDate - effectiveBaseDate) / (1000 * 60 * 60 * 24));
+    
+            const baseUrl = 'http://98.81.212.199:5000/download-data/';
+            const queryParams = new URLSearchParams({
+                date_init: effectiveBaseDate.toISOString().split('T')[0],
+                variable: activeOverlay,
+                lead: lead.toString(),
+                depth: depth.toString(),
+                lat_s: south.toString(),
+                lat_n: north.toString(),
+                lon_w: west.toString(),
+                lon_e: east.toString()
             });
-
+    
+            const url = `${baseUrl}?${queryParams.toString()}`;
+    
+            console.log(url);
+    
             setIsLoading(true);
-
-            fetch(`http://98.81.212.199:5000/download-data?${requestParams.toString()}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    const fileName = response.headers;
-                    console.log(fileName)
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'dataset_final.nc';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                })
-                .catch(error => {
-                    console.error('Download failed:', error);
-                    // You might want to add some user-facing error handling here
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
+    
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = downloadUrl;
+                
+                const formatCoordinate = (value, isLatitude) => {
+                    const absValue = Math.abs(parseFloat(value));
+                    const direction = isLatitude 
+                        ? (parseFloat(value) >= 0 ? 'N' : 'S')
+                        : (parseFloat(value) >= 0 ? 'E' : 'W');
+                    return `${Math.floor(absValue)}${direction}`;
+                };
+    
+                const northStr = formatCoordinate(north, true);
+                const southStr = formatCoordinate(south, true);
+                const eastStr = formatCoordinate(east, false);
+                const westStr = formatCoordinate(west, false);
+    
+                const initDate = queryParams.get('date_init').replace(/-/g, '');
+                const leadStr = lead.toString().padStart(2, '0');
+                const depthStr = depth.toString().padStart(2, '0');
+                const varName = activeOverlay.toUpperCase();
+    
+                a.download = `init${initDate}_lead${leadStr}_depth${depthStr}_var${varName}_${northStr}_${southStr}_${westStr}_${eastStr}.nc`;
+                
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(downloadUrl);
+            })
+            .catch(error => {
+                console.error('Download failed:', error);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
         }
     }, [north, south, east, west, depth, activeOverlay, baseDate, selectedDate]);
+
+
+
+
 
 
     const InputWithButtons = useCallback(({ value, setValue, placeholder, vertical = true }) => {
