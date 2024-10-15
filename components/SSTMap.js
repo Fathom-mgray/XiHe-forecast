@@ -23,6 +23,7 @@ const SSTMap = () => {
     const [showModal, setShowModal] = useState(true);
     const [showLeadDaysResults, setShowLeadDaysResults] = useState(false);
     const [leadDaysData, setLeadDaysData] = useState([]);
+    const [clickedLocation, setClickedLocation] = useState(null);
 
     // Set the initial dates to yesterday
     const yesterday = new Date();
@@ -169,11 +170,14 @@ const SSTMap = () => {
         }
     }, []);
 
+    // And update your handleToggleLeadDaysResults function:
     const handleToggleLeadDaysResults = useCallback((data) => {
         console.log("Toggling lead days results. Current state:", showLeadDaysResults, "New data:", data);
-        setShowLeadDaysResults(prev => !prev);
         if (data) {
             setLeadDaysData(data);
+            setShowLeadDaysResults(true);
+        } else {
+            setShowLeadDaysResults(prev => !prev);
         }
     }, [showLeadDaysResults]);
 
@@ -229,7 +233,7 @@ const SSTMap = () => {
                     <MapContainer 
                         center={initialCenter}
                         zoom={initialZoom}
-                        style={{ height: "100vh", width: "100%" }}
+                        style={{ height: "100vh", width: "100%", zIndex: 1  }}
                         minZoom={2.34}
                         maxBounds={[[80, -180], [-75, 180]]}
                         maxBoundsViscosity={1.0}
@@ -263,7 +267,7 @@ const SSTMap = () => {
                             selectedDate={selectedDate}
                             activeOverlay={activeOverlay}
                             onToggleLeadDaysResults={handleToggleLeadDaysResults}
-                            // depth={depth}
+                            depth={depth}
                         />
 
                     </MapContainer>
@@ -327,41 +331,35 @@ const SSTMap = () => {
                         onZoomToRegion={handleZoomToRegion}
                     />
                 </div>
-                {!showLeadDaysResults && (
-                    <>
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '0px',
-                            left: '20px',
-                            zIndex: 1000,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                        }}>
-                            <SliderComponent 
-                                onDateChange={handleDateChange}
-                                onBaseDateChange={handleBaseDateChange}
-                                onDepthChange={handleDepthChange}
-                                activeOverlay={activeOverlay}
-                                baseDate={baseDate}
-                                selectedDate={selectedDate}
-                            />
-                        </div>
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '0px',
-                            right: '2px',
-                            zIndex: 1000,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                        }}>
-                            <div style={{ marginTop: '10px' }}>
-                                <LegendComponent activeOverlay={activeOverlay} />
-                            </div>
-                        </div>
-                    </>
-                )}
+                {/* {!showLeadDaysResults && ( */}
+                
+                <div className={`
+    fixed left-4 right-4 z-[1001] // Increased z-index
+    transition-all duration-300 ease-in-out
+    ${showLeadDaysResults ? 'bottom-[calc(30vh+1.25rem)]' : 'bottom-5'}
+`}>
+    <SliderComponent 
+        onDateChange={handleDateChange}
+        onBaseDateChange={handleBaseDateChange}
+        onDepthChange={handleDepthChange}
+        activeOverlay={activeOverlay}
+        baseDate={baseDate}
+        selectedDate={selectedDate}
+        depth={depth}
+        isLeadDaysVisible={showLeadDaysResults}
+    />
+</div>
+<div className={`
+    fixed right-2 z-[1001]
+    transition-all duration-300 ease-in-out
+    ${showLeadDaysResults ? 'bottom-[calc(28vh+1.1rem)]' : 'bottom-1'}
+`}>
+    <div className="p-2 ">
+        <LegendComponent activeOverlay={activeOverlay} />
+    </div>
+</div>
+                
+                {/* )} */}
                 {/* {showLeadDaysResults && (
                     <div style={{
                         position: 'absolute',
@@ -374,14 +372,16 @@ const SSTMap = () => {
                         <LeadDaysResults results={leadDaysData} activeOverlay={activeOverlay} />
                     </div>
                 )} */}
-                <LeadDaysResults 
-                    results={leadDaysData} 
-                    activeOverlay={activeOverlay} 
-                    isVisible={showLeadDaysResults}
-                    depth={depth}
-                    onClose={handleCloseLeadDaysResults}
+               <LeadDaysResults 
+    results={leadDaysData} 
+    activeOverlay={activeOverlay} 
+    isVisible={showLeadDaysResults}
+    depth={depth}
+    onClose={handleCloseLeadDaysResults}
+    className="fixed bottom-0 left-0 right-0 z-[1000]" // Ensure it's below the slider but above the map
+/>
 
-                />
+
                 {dataStatus.loading && (
                     <div className='rounded-full font-semibold text-xs' style={messageStyle}>
                         Loading data...
