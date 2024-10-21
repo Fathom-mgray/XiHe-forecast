@@ -31,7 +31,7 @@ const LegendComponent = ({ activeOverlay }) => {
     });
 
     return (
-        <div className="p-3 my-4 rounded" style={{ width: '22vw', maxWidth: '450px', minWidth: '150px', position: 'relative' }}>
+        <div className="p-1 my-1 rounded" style={{ width: '22vw', maxWidth: '450px', minWidth: '150px', position: 'relative' }}>
             <div style={{ height: '20px', display: 'flex', position: 'relative', boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)', borderRadius: '4px' }}>
                 {colorArray.map((color, index) => (
                     <div key={index} style={{ background: color, flex: 1 }} />

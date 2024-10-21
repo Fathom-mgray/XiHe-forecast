@@ -15,6 +15,7 @@ import RectangleWithCloseButton from './RectangleWithCloseButton';
 import TemperaturePopup from './TemperaturePopup';
 import LeadDaysResults from './LeadDaysResults';
 import AnimatedMapLayer from './AnimatedMapLayer';
+// import ResetZoomControl from './ResetZoomControl';
 
 
 const SSTMap = () => {
@@ -26,6 +27,10 @@ const SSTMap = () => {
     const [clickedLocation, setClickedLocation] = useState(null);
 
     // Set the initial dates to yesterday
+    const [north, setNorth] = useState(() => sessionStorage.getItem('north') || '');
+    const [south, setSouth] = useState(() => sessionStorage.getItem('south') || '');
+    const [east, setEast] = useState(() => sessionStorage.getItem('east') || '');
+    const [west, setWest] = useState(() => sessionStorage.getItem('west') || '');
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const [selectedDate, setSelectedDate] = useState(yesterday);
@@ -40,12 +45,20 @@ const SSTMap = () => {
     const [initialZoom, setInitialZoom] = useState(3);
     const [isInitialSetupDone, setIsInitialSetupDone] = useState(false);
     const [dataStatus, setDataStatus] = useState({ loading: false, dataAvailable: false });
+    
 
     const mapRef = useRef(null);
+    
 
     const handleDataStatusChange = useCallback((status) => {
         setDataStatus(status);
     }, []);
+
+    const handleResetZoom = useCallback(() => {
+        if (mapRef.current) {
+            mapRef.current.setView([25, -90], 3);
+        }
+    }, [initialCenter, initialZoom]);
 
     const imageBounds = [
         [8.046585581289271, -98.95135746606363], // [lat_min, lon_min]
@@ -79,14 +92,49 @@ const SSTMap = () => {
         }
     };
 
+    const clearCoordinates = useCallback(() => {
+        setNorth('');
+        setSouth('');
+        setEast('');
+        setWest('');
+        sessionStorage.removeItem('north');
+        sessionStorage.removeItem('south');
+        sessionStorage.removeItem('east');
+        sessionStorage.removeItem('west');
+        setSelectedRegion(null);
+    }, []);
+
+
+    const updateCoordinate = useCallback((key, value) => {
+        const setter = {
+            north: setNorth,
+            south: setSouth,
+            east: setEast,
+            west: setWest
+        }[key];
+
+        setter(value);
+        sessionStorage.setItem(key, value);
+
+        const newBounds = [
+            [parseFloat(key === 'south' ? value : south), parseFloat(key === 'west' ? value : west)],
+            [parseFloat(key === 'north' ? value : north), parseFloat(key === 'east' ? value : east)]
+        ];
+        setSelectedRegion(newBounds);
+    }, [north, south, east, west]);
+
+
     const handleInitialModalSubmit = useCallback(({ north, south, east, west, date }) => {
         console.log("Modal submitted with:", { north, south, east, west, date });
         const newSelectedDate = new Date(date);
         setSelectedDate(newSelectedDate);
         setBaseDate(newSelectedDate);
-        console.log("Modal submitted with date:", baseDate, selectedDate);
 
         if (north && south && east && west) {
+            updateCoordinate('north', north);
+            updateCoordinate('south', south);
+            updateCoordinate('east', east);
+            updateCoordinate('west', west);
             const bounds = [
                 [parseFloat(south), parseFloat(west)],
                 [parseFloat(north), parseFloat(east)]
@@ -95,12 +143,12 @@ const SSTMap = () => {
             const centerLat = (parseFloat(north) + parseFloat(south)) / 2;
             const centerLon = (parseFloat(east) + parseFloat(west)) / 2;
             setInitialCenter([centerLat, centerLon]);
-            setInitialZoom(4); // You can adjust this value as needed
+            setInitialZoom(4);
         }
 
         setIsInitialSetupDone(true);
         setShowInitialModal(false);
-    }, []);
+    }, [updateCoordinate]);
 
     const handleCloseInitialModal = useCallback(() => {
         console.log("Modal closed without submission");
@@ -142,16 +190,15 @@ const SSTMap = () => {
 
     const handleRegionSelect = useCallback(({ north, south, east, west }) => {
         if (north && south && east && west) {
-            const bounds = [
-                [parseFloat(south), parseFloat(west)],
-                [parseFloat(north), parseFloat(east)]
-            ];
-            console.log("Setting selected region:", bounds);
-            setSelectedRegion(bounds);
+            updateCoordinate('north', north);
+            updateCoordinate('south', south);
+            updateCoordinate('east', east);
+            updateCoordinate('west', west);
         } else {
             setSelectedRegion(null);
         }
-    }, []);
+    }, [updateCoordinate]);
+
 
     const handleZoomToRegion = useCallback(({ north, south, east, west }) => {
         if (north && south && east && west && mapRef.current) {
@@ -177,7 +224,7 @@ const SSTMap = () => {
             setLeadDaysData(data);
             setShowLeadDaysResults(true);
         } else {
-            setShowLeadDaysResults(prev => !prev);
+            setShowLeadDaysResults(prev => prev);
         }
     }, [showLeadDaysResults]);
 
@@ -214,16 +261,17 @@ const SSTMap = () => {
             };
         
             return (
-                <Pane style={{ zIndex: 1000 }}>
+                <Pane style={{ zIndex: 450 }}>
                     <RectangleWithCloseButton 
                         bounds={selectedRegion} 
-                        onRemove={handleRemoveRectangle} 
+                        onRemove={handleRemoveRectangle}
+                        clearCoordinates={clearCoordinates}
                     />
                 </Pane>
             );
         }
         return null;
-    }, [selectedRegion]);
+    }, [selectedRegion, clearCoordinates]);
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -269,6 +317,7 @@ const SSTMap = () => {
                             onToggleLeadDaysResults={handleToggleLeadDaysResults}
                             depth={depth}
                         />
+                        
 
                     </MapContainer>
                 )}
@@ -322,21 +371,38 @@ const SSTMap = () => {
                         imageSrc="/images/salt.png" 
                         name="Salinity"
                     />
+                    {/* Add Reset Zoom button here */}
+                    <button
+                        onClick={handleResetZoom}
+                        className="bg-black text-white bg-opacity-40 px-4 py-2 text-xs rounded-full shadow-md hover:bg-black  transition-colors duration-200 mt-4 mr-3"
+                    >
+                        Reset Zoom
+                    </button>
+                    
                     <ToggleableRegionSelector
-                        depth={depth}
-                        activeOverlay={activeOverlay}
-                        baseDate={baseDate}
-                        selectedDate={selectedDate}
-                        onRegionSelect={handleRegionSelect}
-                        onZoomToRegion={handleZoomToRegion}
-                    />
+            depth={depth}
+            activeOverlay={activeOverlay}
+            baseDate={baseDate}
+            selectedDate={selectedDate}
+            onRegionSelect={handleRegionSelect}
+            onZoomToRegion={handleZoomToRegion}
+            north={north}
+            south={south}
+            east={east}
+            west={west}
+            updateCoordinate={updateCoordinate}
+        />
+        
+        {/* <ResetZoomControl initialCenter={initialCenter} initialZoom={initialZoom} /> */}
+
+
                 </div>
-                {/* {!showLeadDaysResults && ( */}
+                
                 
                 <div className={`
-    fixed left-4 right-4 z-[1001] // Increased z-index
+    fixed left-0 right-0 z-[1001] // Increased z-index
     transition-all duration-300 ease-in-out
-    ${showLeadDaysResults ? 'bottom-[calc(30vh+1.25rem)]' : 'bottom-5'}
+    ${showLeadDaysResults ? 'bottom-[calc(25vh+1rem)]' : 'bottom-1'}
 `}>
     <SliderComponent 
         onDateChange={handleDateChange}
@@ -350,9 +416,9 @@ const SSTMap = () => {
     />
 </div>
 <div className={`
-    fixed right-2 z-[1001]
+    fixed right-0 z-[1001]
     transition-all duration-300 ease-in-out
-    ${showLeadDaysResults ? 'bottom-[calc(28vh+1.1rem)]' : 'bottom-1'}
+    ${showLeadDaysResults ? 'bottom-[calc(25vh+1rem)]' : 'bottom-1'}
 `}>
     <div className="p-2 ">
         <LegendComponent activeOverlay={activeOverlay} />
@@ -360,26 +426,26 @@ const SSTMap = () => {
 </div>
                 
                 {/* )} */}
-                {/* {showLeadDaysResults && (
+                {showLeadDaysResults && (
                     <div style={{
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: '30vh',
+                        height: '15vh',
                         zIndex: 1000,
                     }}>
-                        <LeadDaysResults results={leadDaysData} activeOverlay={activeOverlay} />
+                        <LeadDaysResults 
+                            results={leadDaysData} 
+                            activeOverlay={activeOverlay} 
+                            isVisible={showLeadDaysResults}
+                            depth={depth}
+                            onClose={handleCloseLeadDaysResults}
+                            className="fixed bottom-0 left-0 right-0 z-[1000]" // Ensure it's below the slider but above the map
+                        />
                     </div>
-                )} */}
-               <LeadDaysResults 
-    results={leadDaysData} 
-    activeOverlay={activeOverlay} 
-    isVisible={showLeadDaysResults}
-    depth={depth}
-    onClose={handleCloseLeadDaysResults}
-    className="fixed bottom-0 left-0 right-0 z-[1000]" // Ensure it's below the slider but above the map
-/>
+                )}
+               
 
 
                 {dataStatus.loading && (
@@ -397,10 +463,14 @@ const SSTMap = () => {
                     </div>
                 )}
                 <InitialModal
-                    isOpen={showInitialModal}
-                    onClose={handleCloseInitialModal}
-                    onSubmit={handleInitialModalSubmit}
-                />
+                isOpen={showInitialModal}
+                onClose={handleCloseInitialModal}
+                onSubmit={handleInitialModalSubmit}
+                initialNorth={north}
+                initialSouth={south}
+                initialEast={east}
+                initialWest={west}
+            />
             </div>
         </div>
     );

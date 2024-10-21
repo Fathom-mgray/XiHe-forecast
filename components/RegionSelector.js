@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Maximize, Loader } from 'lucide-react';
 
 const RegionSelector = React.memo(({ 
@@ -7,25 +7,19 @@ const RegionSelector = React.memo(({
     depth, 
     activeOverlay, 
     baseDate, 
-    selectedDate 
+    selectedDate,
+    updateCoordinate,
+    north,
+    south,
+    east,
+    west
 }) => {
-    const [north, setNorth] = useState('');
-    const [south, setSouth] = useState('');
-    const [east, setEast] = useState('');
-    const [west, setWest] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const isValidCoordinate = (value) => {
         const num = parseFloat(value);
         return value !== '' && !isNaN(num) && num >= -180 && num <= 180;
     };
-
-    useEffect(() => {
-        if (isValidCoordinate(north) && isValidCoordinate(south) && 
-            isValidCoordinate(east) && isValidCoordinate(west)) {
-            onRegionSelect({ north, south, east, west });
-        }
-    }, [north, south, east, west, onRegionSelect]);
 
     const handleZoomToRegion = useCallback((e) => {
         e.preventDefault();
@@ -35,9 +29,9 @@ const RegionSelector = React.memo(({
         }
     }, [north, south, east, west, onZoomToRegion]);
 
-
-
-
+    const handleUpdateCoordinate = useCallback((key, value) => {
+        updateCoordinate(key, value);
+    }, [updateCoordinate]);
 
     const handleDownload = useCallback(() => {
         if (isValidCoordinate(north) && isValidCoordinate(south) && 
@@ -118,26 +112,19 @@ const RegionSelector = React.memo(({
         }
     }, [north, south, east, west, depth, activeOverlay, baseDate, selectedDate]);
 
-
-
-
-
-
-    const InputWithButtons = useCallback(({ value, setValue, placeholder, vertical = true }) => {
+    const InputWithButtons = useCallback(({ value, coordKey, placeholder, vertical = true }) => {
         const handleChange = (e) => {
             const newValue = e.target.value.replace(/[^\d.-]/g, '');
             if (newValue === '' || newValue === '-' || (parseFloat(newValue) >= -180 && parseFloat(newValue) <= 180)) {
-                setValue(newValue);
+                handleUpdateCoordinate(coordKey, newValue);
             }
         };
 
         const adjustValue = (adjustment) => {
-            setValue(prev => {
-                const num = parseFloat(prev) || 0;
-                let newValue = num + adjustment;
-                newValue = Math.max(-180, Math.min(180, newValue));
-                return newValue.toString();
-            });
+            const num = parseFloat(value) || 0;
+            let newValue = num + adjustment;
+            newValue = Math.max(-180, Math.min(180, newValue));
+            handleUpdateCoordinate(coordKey, newValue.toString());
         };
 
         const handleIncrement = () => adjustValue(1);
@@ -175,13 +162,13 @@ const RegionSelector = React.memo(({
                 )}
             </div>
         );
-    }, []);
+    }, [handleUpdateCoordinate]);
 
     return (
         <form onSubmit={handleZoomToRegion} className="rounded flex flex-col items-center justify-center space-y-4">
-            <InputWithButtons value={north} setValue={setNorth} placeholder="N" />
+            <InputWithButtons value={north} coordKey="north" placeholder="N" />
             <div className="flex justify-between items-center" style={{width: "200px"}}>
-                <InputWithButtons value={west} setValue={setWest} placeholder="W" vertical={false} />
+                <InputWithButtons value={west} coordKey="west" placeholder="W" vertical={false} />
                 <div className="w-14 h-14 flex items-center justify-center">
                     {isLoading ? (
                         <Loader 
@@ -202,9 +189,9 @@ const RegionSelector = React.memo(({
                         />
                     )}
                 </div>
-                <InputWithButtons value={east} setValue={setEast} placeholder="E" vertical={false} />
+                <InputWithButtons value={east} coordKey="east" placeholder="E" vertical={false} />
             </div>
-            <InputWithButtons value={south} setValue={setSouth} placeholder="S" />
+            <InputWithButtons value={south} coordKey="south" placeholder="S" />
             <button
                 type="submit"
                 className="bg-black bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 focus:outline-none focus:shadow-outline flex items-center justify-center text-xs"
@@ -216,6 +203,5 @@ const RegionSelector = React.memo(({
         </form>
     );
 });
-
 
 export default RegionSelector;

@@ -1,9 +1,32 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMap, Popup, CircleMarker } from 'react-leaflet';
 
+const LoadingButton = ({ onClick, isLoading, hasData }) => (
+    <button onClick={onClick} disabled={isLoading}>
+        
+        <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="h-5 w-5" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="white"
+    opacity={1}
+>
+    <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2} 
+        d="M3 17h4v4H3v-4zm6-8h4v12h-4V9zm6-4h4v16h-4V5z" 
+    />
+</svg>
+
+    </button>
+);
+
 const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadDaysResults, depth}) => {
     const [clickedPoint, setClickedPoint] = useState(null);
     const [leadDaysData, setLeadDaysData] = useState(null);
+    const [isLoadingLeadDays, setIsLoadingLeadDays] = useState(false);
     const map = useMap();
     const popupRef = useRef(null);
 
@@ -39,30 +62,33 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
             const data = await response.json();
             console.log('Temperature data:', data);
             
-
             setClickedPoint({
                 lat,
                 lng,
                 value: data.data,
-                error: data.error
+                error: data.error,
+                formattedBaseDate
             });
 
             if (popupRef.current) {
                 popupRef.current.openOn(map);
             }
 
-            // Fetch lead days data asynchronously
-            fetchLeadDaysData(lat, lng, formattedBaseDate);
+            // Reset lead days data when a new point is clicked
+            setLeadDaysData(null);
 
         } catch (error) {
             console.error('Error fetching data:', error);
             setClickedPoint({ lat, lng, error: 'Failed to fetch data' });
         }
-    }, [map, baseDate, selectedDate, activeOverlay]);
+    }, [map, baseDate, selectedDate, activeOverlay, depth]);
 
-    const fetchLeadDaysData = async (lat, lng, formattedBaseDate) => {
+    const fetchLeadDaysData = async () => {
+        if (!clickedPoint || isLoadingLeadDays) return;
+
+        setIsLoadingLeadDays(true);
         try {
-            const leadDaysResponse = await fetch(`http://54.147.36.134:5000/get_all_lead_days?lat=${lat}&lon=${lng}&base_date=${formattedBaseDate}&overlay=${activeOverlay}&depth=${depth}`);
+            const leadDaysResponse = await fetch(`http://54.147.36.134:5000/get_all_lead_days?lat=${clickedPoint.lat}&lon=${clickedPoint.lng}&base_date=${clickedPoint.formattedBaseDate}&overlay=${activeOverlay}&depth=${depth}`);
             
             if (!leadDaysResponse.ok) {
                 throw new Error('Failed to fetch lead days data');
@@ -71,11 +97,12 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
             const leadDaysData = await leadDaysResponse.json();
             console.log('Lead days data:', leadDaysData);
             setLeadDaysData(leadDaysData.data_values);
-            // Update the parent component with the new lead days data
             onToggleLeadDaysResults(leadDaysData.data_values);
         } catch (error) {
             console.error('Error fetching lead days data:', error);
-            // Don't update clickedPoint or show error for lead days data
+            setLeadDaysData({ error: 'Failed to fetch lead days data' });
+        } finally {
+            setIsLoadingLeadDays(false);
         }
     };
 
@@ -100,7 +127,8 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
             console.log("Toggling lead days, data:", leadDaysData);
             onToggleLeadDaysResults(leadDaysData);
         } else {
-            console.log("No lead days data available");
+            console.log("Fetching lead days data");
+            fetchLeadDaysData();
         }
     };
 
@@ -146,7 +174,7 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
                 position={[clickedPoint.lat, clickedPoint.lng]}
                 ref={popupRef}
                 closeButton={false}
-                offset={[59, 20]}
+                offset={[80, 20]}
                 className="custom-popup"
             >
                 <div className="relative">
@@ -158,32 +186,24 @@ const TemperaturePopup = ({ baseDate, selectedDate, activeOverlay, onToggleLeadD
                         ×
                     </button>
                     <div className="flex items-start">
-                        <div className="flex flex-col text-[10px] mr-1 px-1 py-0.5 w-10">
-                            <div>{clickedPoint.lat.toFixed(2)}</div>
-                            <div>{clickedPoint.lng.toFixed(2)}</div>
-                        </div>
                         <div className="bg-black w-[1px] h-[110px]"></div>
                         <div className="rounded-r-full left-0 bg-black bg-opacity-50 text-white text-lg font-semibold w-40 flex items-center justify-between pr-2">
-                            <div className='ml-10'>
-                                {clickedPoint.error ? 'Error' : formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
+                        <div className="ml-2 flex flex-col">
+                                <div>
+                                    {clickedPoint.error ? 'Error' : formatValue(clickedPoint.value, getUnitByOverlay(activeOverlay))}
+                                </div>
+                                <div className=" opacity-60" style={{fontSize:'11px'}}>
+                                    {/* Display lat, lon with N/S and E/W, smaller font */}
+                                    {Math.abs(clickedPoint.lat).toFixed(2)}° {clickedPoint.lat > 0 ? 'N' : 'S'}, { } 
+                                    {Math.abs(clickedPoint.lng).toFixed(2)}° {clickedPoint.lng > 0 ? 'E' : 'W'}
+                                </div>
                             </div>
-                            <button onClick={handleToggleLeadDays} disabled={!leadDaysData}>
-                                <svg 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    className="h-5 w-5" 
-                                    fill="none" 
-                                    viewBox="0 0 24 24" 
-                                    stroke="white"
-                                    opacity={leadDaysData ? 1 : 0.5}
-                                >
-                                    <path 
-                                        strokeLinecap="round" 
-                                        strokeLinejoin="round" 
-                                        strokeWidth={2} 
-                                        d="M19 9l-7 7-7-7" 
-                                    />
-                                </svg>
-                            </button>
+
+                            <LoadingButton 
+                                onClick={handleToggleLeadDays}
+                                isLoading={isLoadingLeadDays}
+                                hasData={!!leadDaysData}
+                            />
                         </div>
                     </div>
                 </div>

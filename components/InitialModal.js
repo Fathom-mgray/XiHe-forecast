@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-const InitialModal = React.memo(({ isOpen, onClose, onSubmit }) => {
-    const [north, setNorth] = useState('');
-    const [south, setSouth] = useState('');
-    const [east, setEast] = useState('');
-    const [west, setWest] = useState('');
+const InitialModal = React.memo(({ isOpen, onClose, onSubmit, initialNorth, initialSouth, initialEast, initialWest }) => {
+    const [north, setNorth] = useState(initialNorth || '');
+    const [south, setSouth] = useState(initialSouth || '');
+    const [east, setEast] = useState(initialEast || '');
+    const [west, setWest] = useState(initialWest || '');
     
     // Set the initial date to yesterday
     const yesterday = new Date();

@@ -56,7 +56,7 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                 bottom: 0, 
                 left: 0, 
                 right: 0, 
-                height: '30vh', 
+                height: '25vh', 
                 zIndex: 1000,
                 display: 'flex',
                 flexDirection: 'column'
@@ -75,8 +75,8 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
             <div className="flex flex-1 overflow-hidden">
             <div className="w-4/5 pr-4">
     {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height="90%">
-            <ComposedChart margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
+        <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                     dataKey="date" 

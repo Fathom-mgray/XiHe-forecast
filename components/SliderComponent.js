@@ -218,7 +218,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                 </div>
             </div>
             <div className="flex items-center space-x-4">
-                <button
+            <button
                     onClick={togglePlay}
                     className="hover:bg-opacity-30 text-white rounded-full p-2 transition-colors duration-200 shadow-md flex-shrink-0"
                     style={{backgroundColor:'rgba(13, 38, 57,0.7)'}}
@@ -247,7 +247,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                                             position: 'absolute', 
                                             left: `${(index / 9) * 100}%`, 
                                             transform: 'translateX(-50%)',
-                                            width: 'clamp(30px, 2.5vw, 40px)',
+                                            width: 'clamp(30px, 3vw, 40px)',
                                         }}
                                     >
                                         {formatDateLabel(date).split('\n').map((part, i) => (

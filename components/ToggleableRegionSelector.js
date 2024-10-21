@@ -6,7 +6,12 @@ const ToggleableRegionSelector = ({ depth,
     baseDate, 
     selectedDate,
     onRegionSelect,
-    onZoomToRegion }) => {
+    onZoomToRegion,
+    north={north},
+    south={south},
+    east={east},
+    west={west},
+    updateCoordinate }) => {
     const [isVisible, setIsVisible] = useState(false);
 
     const toggleVisibility = () => {
@@ -79,6 +84,11 @@ const ToggleableRegionSelector = ({ depth,
                     activeOverlay={activeOverlay}
                     baseDate={baseDate}
                     selectedDate={selectedDate}
+                    north={north}
+                    south={south}
+                    east={east}
+                    west={west}
+                    updateCoordinate={updateCoordinate}
                 />
             </div>
         </div>

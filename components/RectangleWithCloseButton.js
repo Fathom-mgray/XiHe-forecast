@@ -2,12 +2,25 @@ import React, { useRef } from 'react';
 import { Rectangle, useMap, Marker } from 'react-leaflet';
 import L from 'leaflet';
 
-const RectangleWithCloseButton = ({ bounds, onRemove }) => {
+const RectangleWithCloseButton = ({ onRemove, clearCoordinates }) => {
     const map = useMap();
     const markerRef = useRef(null);
 
+    const north = sessionStorage.getItem('north');
+    const south = sessionStorage.getItem('south');
+    const east = sessionStorage.getItem('east');
+    const west = sessionStorage.getItem('west');
+
+    if (!north || !south || !east || !west) {
+        return null;
+    }
+
+    const bounds = [
+        [parseFloat(south), parseFloat(west)],
+        [parseFloat(north), parseFloat(east)]
+    ];
+
     const northEast = L.latLng(bounds[1]);
-    const southWest = L.latLng(bounds[0]);
     const buttonPosition = [northEast.lat, northEast.lng];
 
     const customIcon = L.divIcon({
@@ -36,6 +49,12 @@ const RectangleWithCloseButton = ({ bounds, onRemove }) => {
         iconAnchor: [0, 24],
     });
 
+    const handleClose = (e) => {
+        L.DomEvent.stopPropagation(e);
+        onRemove();
+        clearCoordinates();
+    };
+
     return (
         <>
             <Rectangle 
@@ -51,10 +70,7 @@ const RectangleWithCloseButton = ({ bounds, onRemove }) => {
                 position={buttonPosition} 
                 icon={customIcon}
                 eventHandlers={{
-                    click: (e) => {
-                        L.DomEvent.stopPropagation(e);
-                        onRemove();
-                    }
+                    click: handleClose
                 }}
                 ref={markerRef}
             />
