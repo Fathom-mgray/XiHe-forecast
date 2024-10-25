@@ -187,82 +187,150 @@
 // export default WMSOverlayLayers;
 
 
-
-
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
-    const map = useMap();
-    const layerRef = useRef(null);
+  const map = useMap();
+  const currentLayerRef = useRef(null);
+  const transitionTimeoutRef = useRef(null);
+  const [transitioning, setTransitioning] = useState(false);
+  
+  const overlayTypeMap = {
+    sst: 'sst',
+    so: 'so',
+    thetao: 'thetao',
+    zos: 'zos',
+    speed: 'speed'
+  };
 
-    const overlayTypeMap = {
-        sst: 'sst',
-        so: 'so',
-        thetao: 'thetao',
-        zos: 'zos',
-        speed: 'speed'
+  const overlayType = useMemo(() => overlayTypeMap[activeOverlay] || 'sst', [activeOverlay]);
+  const selectedDateObj = useMemo(() => new Date(selectedDate), [selectedDate]);
+  const baseDateObj = useMemo(() => new Date(baseDate), [baseDate]);
+  
+  const leadDay = useMemo(() => 
+    Math.floor((selectedDateObj - baseDateObj) / (1000 * 60 * 60 * 24)), 
+    [selectedDateObj, baseDateObj]
+  );
+
+  const layerName = useMemo(() => {
+    const formatDate = (date) => date.toISOString().split('T')[0].replace(/-/g, '');
+    const formattedBaseDate = formatDate(baseDateObj);
+    return `XiHe-App:${leadDay}_${depth}_${formattedBaseDate}_${overlayType}.tiff`;
+  }, [leadDay, depth, baseDateObj, overlayType]);
+
+  const createLayer = (name) => {
+    return L.tileLayer(
+      `http://34.229.93.55:8080/geoserver/gwc/service/wmts?` +
+      'SERVICE=WMTS' +
+      '&REQUEST=GetTile' +
+      '&VERSION=1.0.0' +
+      `&LAYER=${name}` +
+      '&STYLE=raster' +
+      '&TILEMATRIXSET=EPSG:900913' +
+      '&TILEMATRIX=EPSG:900913:{z}' +
+      '&TILEROW={y}' +
+      '&TILECOL={x}' +
+      '&FORMAT=image/png', 
+      {
+        tileSize: 256,
+        maxZoom: 20,
+        opacity: 0,
+        crossOrigin: true
+      }
+    );
+  };
+
+  useEffect(() => {
+    // Clear any ongoing transitions
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
+    // Set transitioning state to prevent multiple transitions
+    setTransitioning(true);
+
+    const updateLayer = async () => {
+      // Create new layer
+      const newLayer = createLayer(layerName);
+      
+      // Add new layer to map
+      newLayer.addTo(map);
+
+      // Wait for tiles to load
+      await new Promise((resolve) => {
+        newLayer.once('load', resolve);
+        // Fallback in case load event doesn't fire
+        setTimeout(resolve, 1000);
+      });
+
+      // Start fade in of new layer
+      const fadeIn = () => {
+        let opacity = 0;
+        const fadeInterval = setInterval(() => {
+          opacity += 0.1;
+          if (opacity >= 1) {
+            clearInterval(fadeInterval);
+            
+            // Remove old layer after new one is fully visible
+            if (currentLayerRef.current && currentLayerRef.current !== newLayer) {
+              map.removeLayer(currentLayerRef.current);
+            }
+            
+            currentLayerRef.current = newLayer;
+            setTransitioning(false);
+          }
+          newLayer.setOpacity(opacity);
+        }, 50);
+
+        return fadeInterval;
+      };
+
+      // If there's an existing layer, fade it out while fading in the new one
+      if (currentLayerRef.current) {
+        let oldOpacity = 1;
+        const fadeOutInterval = setInterval(() => {
+          oldOpacity -= 0.1;
+          if (oldOpacity <= 0) {
+            clearInterval(fadeOutInterval);
+          }
+          currentLayerRef.current.setOpacity(oldOpacity);
+        }, 50);
+      }
+
+      // Start fade in
+      const fadeInterval = fadeIn();
+      
+      // Cleanup function
+      return () => {
+        clearInterval(fadeInterval);
+      };
     };
 
-    const overlayType = useMemo(() => {
-        return overlayTypeMap[activeOverlay] || 'sst';
-    }, [activeOverlay]);
+    updateLayer();
 
-    const selectedDateObj = useMemo(() => new Date(selectedDate), [selectedDate]);
-    const baseDateObj = useMemo(() => new Date(baseDate), [baseDate]);
+    // Cleanup function
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [map, layerName]);
 
-    const leadDay = useMemo(() => {
-        return Math.floor((selectedDateObj - baseDateObj) / (1000 * 60 * 60 * 24));
-    }, [selectedDateObj, baseDateObj]);
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (currentLayerRef.current) {
+        map.removeLayer(currentLayerRef.current);
+      }
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [map]);
 
-    const layerName = useMemo(() => {
-        const formatDate = (date) => {
-            return date.toISOString().split('T')[0].replace(/-/g, '');
-        };
-        
-        const formattedBaseDate = formatDate(baseDateObj);
-        return `XiHe-App:${leadDay}_${depth}_${formattedBaseDate}_${overlayType}.tiff`;
-    }, [leadDay, depth, baseDateObj, overlayType]);
-
-    useEffect(() => {
-        // Remove existing layer if it exists
-        if (layerRef.current) {
-            map.removeLayer(layerRef.current);
-        }
-
-        // Create WMTS layer
-        const newLayer = L.tileLayer(
-            `http://34.229.93.55:8080/geoserver/gwc/service/wmts?` +
-            'SERVICE=WMTS' +
-            '&REQUEST=GetTile' +
-            '&VERSION=1.0.0' +
-            `&LAYER=${layerName}` +
-            '&STYLE=raster' +
-            '&TILEMATRIXSET=EPSG:900913' +
-            '&TILEMATRIX=EPSG:900913:{z}' +
-            '&TILEROW={y}' +
-            '&TILECOL={x}' +
-            '&FORMAT=image/png', {
-                tileSize: 256,
-                maxZoom: 20,
-                crossOrigin: true
-            }
-        );
-
-        // Add the layer to the map
-        newLayer.addTo(map);
-        layerRef.current = newLayer;
-
-        // Cleanup function
-        return () => {
-            if (layerRef.current) {
-                map.removeLayer(layerRef.current);
-            }
-        };
-    }, [map, layerName]);
-
-    return null;
+  return null;
 };
 
 export default WMSOverlayLayers;

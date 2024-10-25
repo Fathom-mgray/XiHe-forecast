@@ -83,11 +83,11 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
                     cycleCompletedRef.current = false;
                 } else {
                     // Set a timeout for the next advancement
-                    transitionTimeoutRef.current = setTimeout(advanceWithTransition, 4000);  // 4 seconds between each date
+                    transitionTimeoutRef.current = setTimeout(advanceWithTransition, 1000);
                 }
             };
             // Start the first advancement
-            transitionTimeoutRef.current = setTimeout(advanceWithTransition, 4000);
+            transitionTimeoutRef.current = setTimeout(advanceWithTransition, 1000);
         } else {
             clearTimeout(transitionTimeoutRef.current);
         }
