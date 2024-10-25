@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { ComposedChart, Scatter, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) => {
     useEffect(() => {
@@ -14,17 +14,19 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
         speed: { name: 'Current Speed', unit: 'm/s', color: '#98D8C8' },
     };
 
-    const baseDate = new Date('2023-10-04'); // Sample base date, adjust as needed
-
     const chartData = useMemo(() => {
-        return results?.map(result => {
+        if (!results?.length) return [];
+        
+        const baseDate = new Date(results[0].base_date);
+        
+        return results.map(result => {
             const date = new Date(baseDate);
             date.setDate(date.getDate() + result.lead_day);
             return {
-                date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                date: date.toISOString().split('T')[0],
                 value: result.data_value
             };
-        }) || [];
+        });
     }, [results]);
 
     const [minValue, maxValue] = useMemo(() => {
@@ -32,16 +34,16 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
         const values = chartData.map(d => d.value);
         const min = Math.min(...values);
         const max = Math.max(...values);
-        const padding = (max - min) * 0.1; // Add 10% padding
+        const padding = (max - min) * 0.1;
         return [min - padding, max + padding];
     }, [chartData]);
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="custom-tooltip" style={{ backgroundColor: 'white', padding: '10px', border: '1px solid #ccc' }}>
-                    <p className="label">{`Date : ${payload[0].payload.date}`}</p>
-                    <p className="intro">{`Value : ${payload[0].payload.value} ${overlayConfig[activeOverlay].unit}`}</p>
+                <div className="custom-tooltip bg-white p-2 border border-gray-200 rounded shadow">
+                    <p className="label">{`Date: ${payload[0].payload.date}`}</p>
+                    <p className="intro">{`Value: ${payload[0].payload.value.toFixed(2)} ${overlayConfig[activeOverlay].unit}`}</p>
                 </div>
             );
         }
@@ -73,50 +75,46 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                 </button>
             </div>
             <div className="flex flex-1 overflow-hidden">
-            <div className="w-4/5 pr-4">
-    {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                    dataKey="date" 
-                    type="category"
-                    label={{ 
-                        value: 'Date', 
-                        position: 'bottom', 
-                        offset: -10,  // Increased negative offset to move label up
-                        fontSize: '0.8rem',
-                        dy: -10  // Added negative dy to move label up
-                    }}
-                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
-                    tickFormatter={(value) => value.slice(5)} // Display as MM-DD
-                    height={60}
-                />
-                <YAxis 
-                    domain={[minValue, maxValue]} 
-                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
-                    tickFormatter={(value) => value.toFixed(2)}
-                    tick={{ fontSize: 10 }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                    type="monotone"
-                    dataKey="value"
-                    data={chartData}
-                    stroke={overlayConfig[activeOverlay].color}
-                    strokeWidth={2}
-                    dot={true}
-                />
-            </ComposedChart>
-        </ResponsiveContainer>
-    ) : (
-        <div className="h-full flex items-center justify-center text-sm">No data available</div>
-    )}
-
-    
-</div>
-
-                
+                <div className="w-4/5 pr-4">
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    type="category"
+                                    label={{ 
+                                        value: 'Date', 
+                                        position: 'bottom', 
+                                        offset: -10,
+                                        fontSize: '0.8rem',
+                                        dy: -10
+                                    }}
+                                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
+                                    tickFormatter={(value) => value.slice(5)}
+                                    height={60}
+                                />
+                                <YAxis 
+                                    domain={[minValue, maxValue]} 
+                                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
+                                    tickFormatter={(value) => value.toFixed(2)}
+                                    tick={{ fontSize: 10 }}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Line 
+                                    type="monotone"
+                                    dataKey="value"
+                                    data={chartData}
+                                    stroke={overlayConfig[activeOverlay].color}
+                                    strokeWidth={2}
+                                    dot={true}
+                                />
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-sm">No data available</div>
+                    )}
+                </div>
                 <div className="w-1/5 pl-4 border-l overflow-y-auto">
                     <h3 className="text-lg font-bold mb-2">About</h3>
                     <ul className="text-xs space-y-2">
@@ -125,9 +123,6 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                         </li>
                         <li>
                             <span className="font-medium">Unit:</span> {overlayConfig[activeOverlay].unit}
-                        </li>
-                        <li>
-                            <span className="font-medium">Depth:</span> {depth !== undefined ? `${depth}m` : 'N/A'}
                         </li>
                         <li>
                             <span className="font-medium">Data Points:</span> {chartData.length}

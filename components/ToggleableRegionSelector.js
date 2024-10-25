@@ -33,6 +33,11 @@ const ToggleableRegionSelector = ({ depth,
                         background: white;
                         z-index: 1;
                         overflow: hidden;
+                        transition: opacity 0.2s ease;
+                    }
+
+                    .gradient-border-button:hover {
+                        opacity: 0.8;
                     }
 
                     .gradient-border-button::before {
@@ -58,6 +63,11 @@ const ToggleableRegionSelector = ({ depth,
                         background: white;
                         border-radius: 9999px;
                         z-index: -1;
+                        transition: opacity 0.2s ease;
+                    }
+
+                    .gradient-border-button:hover::after {
+                        opacity: 0.9;
                     }
                 `}
             </style>

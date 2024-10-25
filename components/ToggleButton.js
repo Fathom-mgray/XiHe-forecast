@@ -4,17 +4,19 @@ const ToggleButton = ({ active, setActive, imageSrc, name }) => {
     return (
         <button 
             onClick={() => setActive()}
-            className="flex items-center justify-between rounded-full py-1 px-1 transition-all duration-300 my-1 mx-2 w-fit"
-            style={{
-                backgroundColor: active ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
-                color: active ? 'rgba(255, 255, 255)' : 'rgba(0, 0, 0)',
-                boxShadow: active 
-                    ? '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)' 
-                    : '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
-                transform: active ? 'translateY(-1px)' : 'none',
-            }}
+            className={`
+                flex items-center justify-between rounded-full
+                py-1 px-1 my-1 mx-2 w-fit
+                transition-all duration-300
+                shadow-sm
+                bg-black
+                ${active 
+                    ? 'bg-opacity-60 shadow-md -translate-y-0.5' 
+                    : 'bg-opacity-30 hover:bg-opacity-50'
+                }
+            `}
         >
-            <span className="mr-1 pl-2 text-xs text-white font-semibold whitespace-nowrap">
+            <span className="mr-1 pl-2 text-xs font-semibold whitespace-nowrap text-white">
                 {name || 'Weather radar'}
             </span>
             <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 ml-2">
