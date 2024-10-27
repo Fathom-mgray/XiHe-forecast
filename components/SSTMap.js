@@ -360,31 +360,31 @@ const SSTMap = () => {
                     <ToggleButton 
                         active={activeOverlay === 'sst'}
                         setActive={() => changeOverlay('sst')}   
-                        imageSrc="/images/fire.png" 
+                        imageSrc="/images/sst12.png" 
                         name="Sea Surface Temperature"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'thetao'}
                         setActive={() => changeOverlay('thetao')}   
-                        imageSrc="/images/potential_temp.png" 
+                        imageSrc="/images/pt12.png" 
                         name="Potential temperature"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'zos'}
                         setActive={() => changeOverlay('zos')}   
-                        imageSrc="/images/sea_surface.png" 
+                        imageSrc="/images/ssh12.png" 
                         name="Sea Surface Height"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'speed'}
                         setActive={() => changeOverlay('speed')}   
-                        imageSrc="/images/wind.png" 
+                        imageSrc="/images/speed12.png" 
                         name="Current speed"
                     />
                     <ToggleButton 
                         active={activeOverlay === 'so'}
                         setActive={() => changeOverlay('so')}   
-                        imageSrc="/images/salt.png" 
+                        imageSrc="/images/salinity12.png" 
                         name="Salinity"
                     />
 
