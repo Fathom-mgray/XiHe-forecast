@@ -187,6 +187,11 @@
 // export default WMSOverlayLayers;
 
 
+
+
+
+
+
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -194,6 +199,7 @@ import L from 'leaflet';
 const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
   const map = useMap();
   const currentLayerRef = useRef(null);
+  const nextLayerRef = useRef(null);
   const transitionTimeoutRef = useRef(null);
   const [transitioning, setTransitioning] = useState(false);
   
@@ -214,13 +220,16 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     [selectedDateObj, baseDateObj]
   );
 
-  const layerName = useMemo(() => {
+  const getLayerName = (leadDayOffset = 0) => {
     const formatDate = (date) => date.toISOString().split('T')[0].replace(/-/g, '');
     const formattedBaseDate = formatDate(baseDateObj);
-    return `XiHe-App:${leadDay}_${depth}_${formattedBaseDate}_${overlayType}.tiff`;
-  }, [leadDay, depth, baseDateObj, overlayType]);
+    return `XiHe-App:${leadDay + leadDayOffset}_${depth}_${formattedBaseDate}_${overlayType}.tiff`;
+  };
 
-  const createLayer = (name) => {
+  const layerName = useMemo(() => getLayerName(), [leadDay, depth, baseDateObj, overlayType]);
+  const nextLayerName = useMemo(() => getLayerName(1), [leadDay, depth, baseDateObj, overlayType]);
+
+  const createLayer = (name, options = {}) => {
     return L.tileLayer(
       `http://34.229.93.55:8080/geoserver/gwc/service/wmts?` +
       'SERVICE=WMTS' +
@@ -236,81 +245,115 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
       {
         tileSize: 256,
         maxZoom: 20,
-        opacity: 0,
-        crossOrigin: true
+        opacity: options.opacity ?? 0,
+        crossOrigin: true,
+        layerName: name,
+        ...options
       }
     );
   };
 
-  useEffect(() => {
-    // Clear any ongoing transitions
-    if (transitionTimeoutRef.current) {
-      clearTimeout(transitionTimeoutRef.current);
+  const prefetchNextLayer = () => {
+    const nextName = getLayerName(1);
+    
+    // Don't prefetch if we already have this layer
+    if (nextLayerRef.current?.options.layerName === nextName) {
+      return;
     }
 
-    // Set transitioning state to prevent multiple transitions
-    setTransitioning(true);
+    if (nextLayerRef.current) {
+      map.removeLayer(nextLayerRef.current);
+    }
+
+    const bounds = map.getBounds();
+    const zoom = map.getZoom();
+    
+    const nextLayer = createLayer(nextName, { opacity: 0 });
+    nextLayerRef.current = nextLayer;
+    
+    // Add to map but keep invisible
+    nextLayer.addTo(map);
+
+    // Calculate tile coordinates for current viewport
+    const northWest = bounds.getNorthWest();
+    const southEast = bounds.getSouthEast();
+    
+    const tileBounds = {
+      minX: Math.floor((northWest.lng + 180) / 360 * Math.pow(2, zoom)),
+      maxX: Math.ceil((southEast.lng + 180) / 360 * Math.pow(2, zoom)),
+      minY: Math.floor((1 - Math.log(Math.tan(northWest.lat * Math.PI / 180) + 1 / Math.cos(northWest.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)),
+      maxY: Math.ceil((1 - Math.log(Math.tan(southEast.lat * Math.PI / 180) + 1 / Math.cos(southEast.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom))
+    };
+
+    // Prefetch tiles
+    for (let x = tileBounds.minX; x <= tileBounds.maxX; x++) {
+      for (let y = tileBounds.minY; y <= tileBounds.maxY; y++) {
+        const url = nextLayer.getTileUrl({ x, y, z: zoom });
+        new Image().src = url;
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Keep current layer visible until new one is ready
+    if (currentLayerRef.current) {
+      currentLayerRef.current.setOpacity(1);
+    }
 
     const updateLayer = async () => {
-      // Create new layer
-      const newLayer = createLayer(layerName);
-      
-      // Add new layer to map
-      newLayer.addTo(map);
+      // Check if we have a prefetched layer that matches what we need
+      let newLayer;
+      if (nextLayerRef.current?.options.layerName === layerName) {
+        newLayer = nextLayerRef.current;
+        nextLayerRef.current = null;
+      } else {
+        // Create new layer if no matching prefetched layer
+        newLayer = createLayer(layerName, { opacity: 0 });
+        newLayer.addTo(map);
+      }
 
       // Wait for tiles to load
       await new Promise((resolve) => {
-        newLayer.once('load', resolve);
-        // Fallback in case load event doesn't fire
-        setTimeout(resolve, 1000);
+        if (newLayer.isLoading()) {
+          newLayer.once('load', resolve);
+          setTimeout(resolve, 2000); // Increased timeout for better reliability
+        } else {
+          resolve();
+        }
       });
 
-      // Start fade in of new layer
-      const fadeIn = () => {
-        let opacity = 0;
-        const fadeInterval = setInterval(() => {
-          opacity += 0.1;
-          if (opacity >= 1) {
-            clearInterval(fadeInterval);
-            
-            // Remove old layer after new one is fully visible
-            if (currentLayerRef.current && currentLayerRef.current !== newLayer) {
-              map.removeLayer(currentLayerRef.current);
-            }
-            
-            currentLayerRef.current = newLayer;
-            setTransitioning(false);
+      // Fade in new layer while keeping old layer visible
+      let opacity = 0;
+      const fadeInterval = setInterval(() => {
+        opacity = Math.min(1, opacity + 0.1);
+        newLayer.setOpacity(opacity);
+        
+        if (opacity >= 1) {
+          clearInterval(fadeInterval);
+          
+          // Only remove old layer after new one is fully visible
+          if (currentLayerRef.current && currentLayerRef.current !== newLayer) {
+            map.removeLayer(currentLayerRef.current);
           }
-          newLayer.setOpacity(opacity);
-        }, 50);
+          
+          currentLayerRef.current = newLayer;
+          setTransitioning(false);
+          
+          // Prefetch next layer after current transition is complete
+          prefetchNextLayer();
+        }
+      }, 50);
 
-        return fadeInterval;
-      };
-
-      // If there's an existing layer, fade it out while fading in the new one
-      if (currentLayerRef.current) {
-        let oldOpacity = 1;
-        const fadeOutInterval = setInterval(() => {
-          oldOpacity -= 0.1;
-          if (oldOpacity <= 0) {
-            clearInterval(fadeOutInterval);
-          }
-          currentLayerRef.current.setOpacity(oldOpacity);
-        }, 50);
-      }
-
-      // Start fade in
-      const fadeInterval = fadeIn();
-      
-      // Cleanup function
       return () => {
         clearInterval(fadeInterval);
       };
     };
 
-    updateLayer();
+    if (!transitioning) {
+      setTransitioning(true);
+      updateLayer();
+    }
 
-    // Cleanup function
     return () => {
       if (transitionTimeoutRef.current) {
         clearTimeout(transitionTimeoutRef.current);
@@ -318,11 +361,14 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
     };
   }, [map, layerName]);
 
-  // Cleanup when component unmounts
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (currentLayerRef.current) {
         map.removeLayer(currentLayerRef.current);
+      }
+      if (nextLayerRef.current) {
+        map.removeLayer(nextLayerRef.current);
       }
       if (transitionTimeoutRef.current) {
         clearTimeout(transitionTimeoutRef.current);
