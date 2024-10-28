@@ -39,6 +39,13 @@ const SSTMap = () => {
     const [east, setEast] = useState(() => sessionStorage.getItem('east') || '');
     const [west, setWest] = useState(() => sessionStorage.getItem('west') || '');
 
+    const yesterday = (() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 1); // Subtract 1 day
+        date.setUTCHours(12, 0, 0, 0);    // Set to noon UTC
+        return date;
+    })();
+
     // Date management
     const [baseDate, setBaseDate] = useState(() => {
         const storedDate = sessionStorage.getItem('baseDate');
@@ -78,7 +85,7 @@ const SSTMap = () => {
             setInitialCenter([centerLat, centerLon]);
             setInitialZoom(4);
         }
-    }, [north, south, east, west]);
+    }, []);
 
     // Handle zoom state
     useEffect(() => {

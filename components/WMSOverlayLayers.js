@@ -325,7 +325,7 @@ const WMSOverlayLayers = ({ selectedDate, baseDate, depth, activeOverlay }) => {
       // Fade in new layer while keeping old layer visible
       let opacity = 0;
       const fadeInterval = setInterval(() => {
-        opacity = Math.min(1, opacity + 0.1);
+        opacity = Math.min(1, opacity + 0.3);
         newLayer.setOpacity(opacity);
         
         if (opacity >= 1) {
