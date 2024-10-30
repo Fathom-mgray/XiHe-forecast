@@ -6,3 +6,118 @@
     border: none !important;
     background-color: transparent !important;
   }
+/* Position the toolbar below the base map selector */
+.leaflet-draw.leaflet-control {
+    margin-top: 100px !important;
+}
+
+/* Style individual buttons */
+.leaflet-draw-toolbar a {
+    background-color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    margin-bottom: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    transition: all 0.2s ease;
+}
+
+/* Hover state for buttons */
+.leaflet-draw-toolbar a:hover {
+    background-color: #f8f8f8 !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Active state for buttons */
+.leaflet-draw-toolbar .leaflet-draw-toolbar-button-enabled {
+    background-color: #4a5568 !important;
+    color: white !important;
+}
+
+/* Style the toolbar actions section */
+.leaflet-draw-actions {
+    left: 40px !important;
+    margin-top: -2px;
+}
+
+.leaflet-draw-actions a {
+    background-color: white !important;
+    color: #4a5568 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    margin: 2px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+}
+
+.leaflet-draw-actions a:hover {
+    background-color: #f8f8f8 !important;
+    color: #2d3748 !important;
+}
+
+/* Fix the position of action buttons */
+.leaflet-draw-actions li {
+    display: inline-block !important;
+    margin-right: 4px !important;
+}
+
+/* Style the drawing instructions */
+.leaflet-draw-tooltip {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    color: white !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+}
+
+/* Style the error messages */
+.leaflet-draw-tooltip-error {
+    background-color: #e53e3e !important;
+    color: white !important;
+}
+
+/* Fix the toolbar vertical spacing */
+.leaflet-draw-toolbar.leaflet-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Remove default borders */
+.leaflet-draw.leaflet-control .leaflet-draw-section {
+    border: none !important;
+}
+
+.leaflet-bar {
+    box-shadow: none !important;
+}
+
+/* Ensure tooltips are above other elements */
+.leaflet-draw-tooltip {
+    z-index: 1000 !important;
+}
+
+/* Style the editing handles */
+.leaflet-editing-icon {
+    border-radius: 50% !important;
+    background-color: white !important;
+    border: 2px solid #4a5568 !important;
+    width: 12px !important;
+    height: 12px !important;
+}
+
+/* Style the middle markers for editing */
+.leaflet-draw-guide-dash {
+    background-color: #4a5568 !important;
+    opacity: 0.7 !important;
+}

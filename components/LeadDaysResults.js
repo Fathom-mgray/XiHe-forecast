@@ -1,10 +1,20 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) => {
+const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, depth, onClose }) => {
+    const [activeTab, setActiveTab] = useState('leadDays');
+    const hasDepthData = depthProfile && ['so', 'speed', 'thetao'].includes(activeOverlay);
+
     useEffect(() => {
         console.log("LeadDaysResults rendered. isVisible:", isVisible, "results:", results);
-    }, [isVisible, results]);
+        if (hasDepthData) {
+            console.log("Depth profile data received:", {
+                overlay: activeOverlay,
+                currentDepth: depth,
+                profile: depthProfile
+            });
+        }
+    }, [isVisible, results, depthProfile, activeOverlay, depth, hasDepthData]);
 
     const overlayConfig = {
         sst: { name: 'Sea Surface Temperature', unit: '°C', color: '#FF6B6B' },
@@ -15,16 +25,23 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
     };
 
     const chartData = useMemo(() => {
-        if (!results?.length) return [];
+        if (!results) return [];
         
-        const baseDate = new Date(results[0].base_date);
-        
-        return results.map(result => {
+        const dataPoints = Object.entries(results)
+            .map(([key, value]) => ({
+                lead_day: parseInt(key.replace('lead_day_', '')),
+                value: value
+            }))
+            .sort((a, b) => a.lead_day - b.lead_day);
+
+        const baseDate = new Date();
+        return dataPoints.map(point => {
             const date = new Date(baseDate);
-            date.setDate(date.getDate() + result.lead_day);
+            date.setDate(date.getDate() + point.lead_day);
             return {
                 date: date.toISOString().split('T')[0],
-                value: result.data_value
+                value: point.value,
+                lead_day: point.lead_day
             };
         });
     }, [results]);
@@ -43,6 +60,7 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
             return (
                 <div className="custom-tooltip bg-white p-2 border border-gray-200 rounded shadow">
                     <p className="label">{`Date: ${payload[0].payload.date}`}</p>
+                    <p className="intro">{`Lead Day: ${payload[0].payload.lead_day}`}</p>
                     <p className="intro">{`Value: ${payload[0].payload.value.toFixed(2)} ${overlayConfig[activeOverlay].unit}`}</p>
                 </div>
             );
@@ -50,6 +68,109 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
         return null;
     };
 
+    const renderLeadDaysChart = () => (
+        <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                    dataKey="date" 
+                    type="category"
+                    label={{ 
+                        value: 'Date', 
+                        position: 'bottom', 
+                        offset: -10,
+                        fontSize: '0.8rem',
+                        dy: -10
+                    }}
+                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
+                    tickFormatter={(value) => value.slice(5)}
+                    height={60}
+                />
+                <YAxis 
+                    domain={[minValue, maxValue]} 
+                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
+                    tickFormatter={(value) => value.toFixed(2)}
+                    tick={{ fontSize: 10 }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                    type="monotone"
+                    dataKey="value"
+                    data={chartData}
+                    stroke={overlayConfig[activeOverlay].color}
+                    strokeWidth={2}
+                    dot={true}
+                />
+            </ComposedChart>
+        </ResponsiveContainer>
+    );
+
+    const renderDepthChart = () => {
+        if (!depthProfile) return null;
+    
+        const depthData = depthProfile.y.map((d, i) => ({
+            depth: d,
+            value: depthProfile.x[i]
+        })).sort((a, b) => a.depth - b.depth);
+    
+        return (
+            <ResponsiveContainer width="100%" height="90%">
+                <ComposedChart
+                    layout="vertical"
+                    margin={{ top: 0, right: 0, left: 0, bottom: 10 }}  // Adjusted margins to match lead days chart
+                >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                        type="number"
+                        domain={['dataMin', 'dataMax']}
+                        label={{ 
+                            value: overlayConfig[activeOverlay].unit,
+                            position: 'top',
+                            offset: -20,  // Adjusted offset
+                            fontSize: '0.8rem' 
+                        }}
+                        orientation="top"
+                        tickFormatter={(value) => value.toFixed(2)}
+                        tick={{ fontSize: 10 }} 
+                    />
+                    <YAxis 
+                        dataKey="depth"
+                        type="number"
+                        domain={[0, 'dataMax']}
+                        label={{ 
+                            value: 'Depth (m)', 
+                            angle: -90, 
+                            position: 'insideLeft', 
+                            offset: 15,  
+                            fontSize: 12  
+                        }}
+                        tick={{ fontSize: 10 }}  
+                    />
+                    <Tooltip 
+                        content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                                return (
+                                    <div className="bg-white p-2 border rounded shadow">
+                                        <p>Depth: {payload[0].payload.depth}m</p>
+                                        <p>Value: {payload[0].payload.value.toFixed(2)} {overlayConfig[activeOverlay].unit}</p>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        }}
+                    />
+                    <Line
+                        type="monotone"
+                        dataKey="value"
+                        data={depthData}
+                        stroke={overlayConfig[activeOverlay].color}
+                        strokeWidth={2} 
+                        dot={{ fill: overlayConfig[activeOverlay].color }}
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
+        );
+    };
     return (
         <div 
             className={`bg-white bg-opacity-100 rounded-t-lg shadow-lg transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0' : 'translate-y-full'}`} 
@@ -58,13 +179,37 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                 bottom: 0, 
                 left: 0, 
                 right: 0, 
-                height: '25vh', 
+                height: '35vh', 
                 zIndex: 1000,
                 display: 'flex',
                 flexDirection: 'column'
             }}
         >
             <div className="flex justify-between items-center p-2">
+                {hasDepthData && (
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setActiveTab('leadDays')}
+                            className={`px-4 py-1 rounded-t-lg text-sm font-medium transition-colors duration-200 ${
+                                activeTab === 'leadDays' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            Lead Days
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('depth')}
+                            className={`px-4 py-1 rounded-t-lg text-sm font-medium transition-colors duration-200 ${
+                                activeTab === 'depth' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            Depth Profile
+                        </button>
+                    </div>
+                )}
                 <button 
                     onClick={onClose}
                     className="text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -76,43 +221,14 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
             </div>
             <div className="flex flex-1 overflow-hidden">
                 <div className="w-4/5 pr-4">
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="date" 
-                                    type="category"
-                                    label={{ 
-                                        value: 'Date', 
-                                        position: 'bottom', 
-                                        offset: -10,
-                                        fontSize: '0.8rem',
-                                        dy: -10
-                                    }}
-                                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
-                                    tickFormatter={(value) => value.slice(5)}
-                                    height={60}
-                                />
-                                <YAxis 
-                                    domain={[minValue, maxValue]} 
-                                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
-                                    tickFormatter={(value) => value.toFixed(2)}
-                                    tick={{ fontSize: 10 }}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Line 
-                                    type="monotone"
-                                    dataKey="value"
-                                    data={chartData}
-                                    stroke={overlayConfig[activeOverlay].color}
-                                    strokeWidth={2}
-                                    dot={true}
-                                />
-                            </ComposedChart>
-                        </ResponsiveContainer>
+                    {activeTab === 'leadDays' ? (
+                        chartData.length > 0 ? renderLeadDaysChart() : (
+                            <div className="h-full flex items-center justify-center text-sm">No data available</div>
+                        )
                     ) : (
-                        <div className="h-full flex items-center justify-center text-sm">No data available</div>
+                        hasDepthData ? renderDepthChart() : (
+                            <div className="h-full flex items-center justify-center text-sm">No depth data available</div>
+                        )
                     )}
                 </div>
                 <div className="w-1/5 pl-4 border-l overflow-y-auto">
@@ -124,12 +240,30 @@ const LeadDaysResults = ({ results, activeOverlay, isVisible, depth, onClose }) 
                         <li>
                             <span className="font-medium">Unit:</span> {overlayConfig[activeOverlay].unit}
                         </li>
-                        <li>
-                            <span className="font-medium">Data Points:</span> {chartData.length}
-                        </li>
-                        <li>
-                            <span className="font-medium">Date Range:</span> {chartData.length > 0 ? `${chartData[0].date} to ${chartData[chartData.length - 1].date}` : 'N/A'}
-                        </li>
+                        {activeTab === 'leadDays' ? (
+                            <>
+                                <li>
+                                    <span className="font-medium">Data Points:</span> {chartData.length}
+                                </li>
+                                <li>
+                                    <span className="font-medium">Lead Days:</span> {chartData.length > 0 ? `0 to ${chartData[chartData.length - 1].lead_day}` : 'N/A'}
+                                </li>
+                                <li>
+                                    <span className="font-medium">Date Range:</span> {chartData.length > 0 ? `${chartData[0].date} to ${chartData[chartData.length - 1].date}` : 'N/A'}
+                                </li>
+                            </>
+                        ) : (
+                            hasDepthData && (
+                                <>
+                                    <li>
+                                        <span className="font-medium">Current Depth:</span> {depth}m
+                                    </li>
+                                    <li>
+                                        <span className="font-medium">Available Depths:</span> {depthProfile?.y.join(', ')}m
+                                    </li>
+                                </>
+                            )
+                        )}
                     </ul>
                 </div>
             </div>

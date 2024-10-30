@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Pane } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane, FeatureGroup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import WMSOverlayLayers from './WMSOverlayLayers';
 import ToggleButton from './ToggleButton';
@@ -15,6 +15,12 @@ import LeadDaysResults from './LeadDaysResults';
 import { Minimize} from 'lucide-react';
 import WMTSOverlay from './WMTSOverlay';
 import checkWMTSCapabilities from './checkWMTSCapabilities';
+import { EditControl } from "react-leaflet-draw";
+import { Pencil, Edit, Trash2 } from 'lucide-react';
+
+// import { Button } from '@/components/ui/button';
+
+
 
 
 const SSTMap = () => {
@@ -23,6 +29,7 @@ const SSTMap = () => {
     const [activeOverlay, setActiveOverlay] = useState('sst');
     const [showLeadDaysResults, setShowLeadDaysResults] = useState(false);
     const [leadDaysData, setLeadDaysData] = useState([]);
+    const [depthProfileData, setDepthProfileData] = useState(null);
     const [selectedMapLayer, setSelectedMapLayer] = useState('default');
     const [dataStatus, setDataStatus] = useState({ loading: false, dataAvailable: false });
     
@@ -38,6 +45,13 @@ const SSTMap = () => {
     const [south, setSouth] = useState(() => sessionStorage.getItem('south') || '');
     const [east, setEast] = useState(() => sessionStorage.getItem('east') || '');
     const [west, setWest] = useState(() => sessionStorage.getItem('west') || '');
+
+    // const [polygons, setPolygons] = useState([]);
+    // const [drawMode, setDrawMode] = useState(null);
+    // const [isDrawingActive, setIsDrawingActive] = useState(false);
+    // const featureGroupRef = useRef();
+    // const drawControlRef = useRef();
+    // const [isMapDrawing, setIsMapDrawing] = useState(false);
 
     const yesterday = (() => {
         const date = new Date();
@@ -72,6 +86,51 @@ const SSTMap = () => {
 
     const mapRef = useRef(null);
 
+    useEffect(() => {
+        if (!mapRef.current) return;
+    
+        const map = mapRef.current;
+    
+        // Listen for draw:drawstart event
+        map.on('draw:drawstart', () => {
+            setIsMapDrawing(true);
+        });
+    
+        // Listen for draw:drawstop event
+        map.on('draw:drawstop', () => {
+            setIsMapDrawing(false);
+        });
+    
+        // Listen for draw:editstart event
+        map.on('draw:editstart', () => {
+            setIsMapDrawing(true);
+        });
+    
+        // Listen for draw:editstop event
+        map.on('draw:editstop', () => {
+            setIsMapDrawing(false);
+        });
+    
+        // Listen for draw:deletestart event
+        map.on('draw:deletestart', () => {
+            setIsMapDrawing(true);
+        });
+    
+        // Listen for draw:deletestop event
+        map.on('draw:deletestop', () => {
+            setIsMapDrawing(false);
+        });
+    
+        return () => {
+            map.off('draw:drawstart');
+            map.off('draw:drawstop');
+            map.off('draw:editstart');
+            map.off('draw:editstop');
+            map.off('draw:deletestart');
+            map.off('draw:deletestop');
+        };
+    }, [mapRef.current]);
+
     // Initialize map with coordinates from session storage
     useEffect(() => {
         if (north && south && east && west) {
@@ -94,6 +153,14 @@ const SSTMap = () => {
             const handleMoveEnd = () => setIsZooming(false);
             map.on('moveend', handleMoveEnd);
             return () => map.off('moveend', handleMoveEnd);
+        }
+    }, []);
+
+     // Add this after your existing useEffect blocks
+     useEffect(() => {
+        // Initialize leaflet-draw
+        if (typeof window !== 'undefined') {
+            require('leaflet-draw');
         }
     }, []);
 
@@ -188,12 +255,16 @@ const SSTMap = () => {
         }
     }, []);
 
-    const handleToggleLeadDaysResults = useCallback((data) => {
+    const handleToggleLeadDaysResults = useCallback((data, depthData = null) => {
         if (data) {
             setLeadDaysData(data);
+            if (depthData) {
+                setDepthProfileData(depthData);
+            }
             setShowLeadDaysResults(true);
         }
-    }, []);
+    }, [baseDate, activeOverlay, selectedDate]);
+    
 
     const handleCloseLeadDaysResults = useCallback(() => {
         setShowLeadDaysResults(false);
@@ -296,6 +367,89 @@ const SSTMap = () => {
     };
 
 
+    // const handleCreated = (e) => {
+    //     const { layerType, layer } = e;
+    //     if (layerType === 'polygon') {
+    //         const coordinates = layer.getLatLngs()[0].map(latLng => [latLng.lat, latLng.lng]);
+    //         setPolygons(prev => [...prev, {
+    //             id: Date.now(),
+    //             coordinates: coordinates
+    //         }]);
+    //     }
+    //     setDrawMode(null);
+    //     setIsDrawingActive(false);
+    // };
+    
+
+    // const handleEdited = (e) => {
+    //     const layers = e.layers;
+    //     layers.eachLayer(layer => {
+    //         const coordinates = layer.getLatLngs()[0].map(latLng => [latLng.lat, latLng.lng]);
+    //         setPolygons(prev => 
+    //             prev.map(polygon => 
+    //                 polygon.id === layer.options.id ? 
+    //                 { ...polygon, coordinates } : 
+    //                 polygon
+    //             )
+    //         );
+    //     });
+    //     setDrawMode(null);
+    //     setIsDrawingActive(false);
+    // };
+
+    // const handleDeleted = (e) => {
+    //     const layers = e.layers;
+    //     layers.eachLayer(layer => {
+    //         setPolygons(prev => 
+    //             prev.filter(polygon => polygon.id !== layer.options.id)
+    //         );
+    //     });
+    //     setDrawMode(null);
+    //     setIsDrawingActive(false);
+    // };
+
+    // const clearAllPolygons = () => {
+    //     if (featureGroupRef.current) {
+    //         featureGroupRef.current.clearLayers();
+    //     }
+    //     setPolygons([]);
+    //     setDrawMode(null);
+    //     setIsDrawingActive(false);
+    // };
+
+    // const toggleDrawMode = (mode) => {
+    //     if (drawControlRef.current) {
+    //         const drawControl = drawControlRef.current;
+            
+    //         // Disable all modes first
+    //         if (drawControl._toolbars.draw) {
+    //             drawControl._toolbars.draw._modes.polygon.handler.disable();
+    //         }
+    //         if (drawControl._toolbars.edit) {
+    //             drawControl._toolbars.edit._modes.edit.handler.disable();
+    //             drawControl._toolbars.edit._modes.remove.handler.disable();
+    //         }
+
+    //         // Then enable the selected mode
+    //         if (mode === drawMode) {
+    //             setDrawMode(null);
+    //             setIsDrawingActive(false);
+    //         } else {
+    //             if (mode === 'draw') {
+    //                 drawControl._toolbars.draw._modes.polygon.handler.enable();
+    //             } else if (mode === 'edit') {
+    //                 drawControl._toolbars.edit._modes.edit.handler.enable();
+    //             } else if (mode === 'delete') {
+    //                 drawControl._toolbars.edit._modes.remove.handler.enable();
+    //             }
+    //             setDrawMode(mode);
+    //             setIsDrawingActive(true);
+    //         }
+    //     }
+    // };
+
+
+
 
 
 
@@ -344,14 +498,58 @@ const SSTMap = () => {
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         />
                     </Pane>
+
+
+
                     {renderRectangle()}
-                    <TemperaturePopup 
-                        baseDate={baseDate}
-                        selectedDate={selectedDate}
-                        activeOverlay={activeOverlay}
-                        onToggleLeadDaysResults={handleToggleLeadDaysResults}
-                        depth={depth}
+
+
+
+                    {/* {!isMapDrawing && ( */}
+    <TemperaturePopup 
+        baseDate={baseDate}
+        selectedDate={selectedDate}
+        activeOverlay={activeOverlay}
+        onToggleLeadDaysResults={handleToggleLeadDaysResults}
+        depth={depth}
+    />
+{/* )} */}
+
+
+
+
+                {/* <FeatureGroup ref={featureGroupRef}>
+                    <EditControl
+                        ref={drawControlRef}
+                        position="topleft"
+                        onCreated={handleCreated}
+                        onEdited={handleEdited}
+                        onDeleted={handleDeleted}
+                        draw={{
+                            rectangle: false,
+                            circle: false,
+                            circlemarker: false,
+                            marker: false,
+                            polyline: false,
+                            polygon: {
+                                allowIntersection: false,
+                                drawError: {
+                                    color: '#e1e100',
+                                    message: '<strong>Error:</strong> Shape edges cannot cross!'
+                                },
+                                shapeOptions: {
+                                    color: '#97266d',
+                                    fillOpacity: 0.2
+                                }
+                            }
+                        }}
                     />
+                </FeatureGroup> */}
+
+                    
+
+
+
                 </MapContainer>
 
                 {/* Map Controls */}
@@ -404,6 +602,16 @@ const SSTMap = () => {
                         <Minimize size={15} className="mr-2" />
                         Reset Zoom
                     </button>
+
+                    {/* <button
+                            onClick={clearAllPolygons}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 focus:outline-none focus:shadow-outline flex items-center justify-center text-xs mx-2 mt-2"
+                        >
+                            <Trash2 size={15} className="mr-2" />
+                            Clear Polygons
+                        </button> */}
+                    
+
                     
 
                     <ToggleableRegionSelector
@@ -425,7 +633,7 @@ const SSTMap = () => {
                 <div className={`
                     fixed left-0 right-0 z-[1001]
                     transition-all duration-300 ease-in-out
-                    ${showLeadDaysResults ? 'bottom-[calc(25vh+1rem)]' : 'bottom-1'}
+                    ${showLeadDaysResults ? 'bottom-[calc(35vh+1rem)]' : 'bottom-1'}
                 `}>
                     {console.log('Passing baseDate to SliderComponent:', baseDate)}
                     <SliderComponent 
@@ -443,7 +651,7 @@ const SSTMap = () => {
                 <div className={`
                     fixed right-0 z-[1001]
                     transition-all duration-300 ease-in-out
-                    ${showLeadDaysResults ? 'bottom-[calc(25vh+1rem)]' : 'bottom-1'}
+                    ${showLeadDaysResults ? 'bottom-[calc(35vh+1rem)]' : 'bottom-1'}
                 `}>
                     <div className="p-2">
                         <LegendComponent activeOverlay={activeOverlay} />
@@ -462,12 +670,15 @@ const SSTMap = () => {
                     }}>
                         <LeadDaysResults 
                             results={leadDaysData} 
+                            depthProfile={depthProfileData}  // Add this prop
                             activeOverlay={activeOverlay} 
                             isVisible={showLeadDaysResults}
                             depth={depth}
                             onClose={handleCloseLeadDaysResults}
                             className="fixed bottom-0 left-0 right-0 z-[1000]"
                         />
+
+
                     </div>
                 )}
 

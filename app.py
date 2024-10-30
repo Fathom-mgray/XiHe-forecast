@@ -72,12 +72,15 @@ from datetime import datetime
 from dateutil import parser
 import traceback
 
+
+
 @app.route('/get_at_point', methods=['GET'])
 def get_at_point():
     try:
         # Log incoming request parameters
         logger.info(f"Received request with parameters: {request.args}")
 
+        # Get required parameters
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         date_str = request.args.get('date')
@@ -85,27 +88,31 @@ def get_at_point():
         active_overlay = request.args.get('overlay', type=str)
         depth = request.args.get('depth', type=float)
 
-
-        depth_mapping = {
-                0: 0.49399998784065247,
-                10: 77.85389709472656,
-                22: 643.5667724609375
-            }
-            
-        if depth in depth_mapping:
-            mapped_depth = depth_mapping[depth]
-            logger.info(f"Mapped depth {depth} to {mapped_depth}")
-        else:
-            mapped_depth = depth
-            logger.info(f"Using original depth value: {depth}")
-            
-        depth = mapped_depth
-        
-
         # Validate required parameters
         if lat is None or lon is None:
             logger.error("Missing latitude or longitude")
             return jsonify({'error': 'Latitude and longitude must be provided'}), 400
+
+        # Define which overlays require depth
+        depth_required_overlays = {'so', 'speed', 'thetao'}
+        
+        # Handle depth only for overlays that require it
+        if active_overlay in depth_required_overlays:
+            if depth is None:
+                logger.error(f"Depth is required for {active_overlay} overlay")
+                return jsonify({'error': f'Depth must be provided for {active_overlay} overlay'}), 400
+                
+            # Apply depth mapping only for depth-required overlays
+            depth_mapping = {
+                0: 0.49399998784065247,
+                10: 77.85389709472656,
+                22: 643.5667724609375
+            }
+            depth = depth_mapping.get(depth, depth)
+            logger.info(f"Using depth value: {depth}")
+        else:
+            depth = None  # Ensure depth is None for non-depth overlays
+            logger.info(f"Depth not required for {active_overlay} overlay")
 
         # Parse the date string if provided
         if date_str:
@@ -117,7 +124,6 @@ def get_at_point():
                 return jsonify({'error': f'Invalid date format: {date_str}'}), 400
         else:
             date = None
-            logger.info("No date provided, will use most recent data")
 
         # If date or lead_day are not provided, get the most recent data
         if date is None or lead_day is None:
@@ -140,29 +146,39 @@ def get_at_point():
                 logger.error(f"Error querying for most recent data: {e}")
                 return jsonify({'error': 'Error retrieving most recent data'}), 500
 
-        # Log the final parameters being used for the query
-        logger.info(f"Querying with parameters: lat={lat}, lon={lon}, date={date}, lead_day={lead_day}, overlay={active_overlay}, depth={depth}")
+        # Map overlay to table name
+        table_mapping = {
+            'sst': 'ocean_data_sst',
+            'zos': 'ocean_data_zos',
+            'so': 'ocean_data_so',
+            'thetao': 'ocean_data_thetao',
+            'speed': 'ocean_data_speed'
+        }
 
-        # Prepare the query based on the active overlay
-        if active_overlay == 'speed':
-            if depth is None:
-                logger.error("Depth is required for speed overlay")
-                return jsonify({'error': 'Depth must be provided for speed overlay'}), 400
-            query = text(f"SELECT * FROM get_speed_at_point(:lat, :lon, :date, :lead_day, :depth)")
-            query_params = {'lat': lat, 'lon': lon, 'date': date, 'lead_day': lead_day, 'depth': depth}
-        else:
-            query = text(f"SELECT * FROM get_{active_overlay}_at_point(:lat, :lon, :date, :lead_day)")
-            query_params = {'lat': lat, 'lon': lon, 'date': date, 'lead_day': lead_day}
+        table_name = table_mapping.get(active_overlay)
+        if not table_name:
+            logger.error(f"Invalid overlay type: {active_overlay}")
+            return jsonify({'error': 'Invalid overlay type'}), 400
+
+        # Log the final parameters being used for the query
+        logger.info(f"Querying with parameters: table={table_name}, lat={lat}, lon={lon}, "
+                   f"date={date}, lead_day={lead_day}, depth={depth}")
+
+        # Prepare and execute the dynamic query
+        query = text("SELECT * FROM get_ocean_data_at_point(:table_name, :lat, :lon, :date, :lead_day, :depth)")
+        query_params = {
+            'table_name': table_name,
+            'lat': lat,
+            'lon': lon,
+            'date': date,
+            'lead_day': lead_day,
+            'depth': depth
+        }
 
         logger.info(f"Executing query: {query}")
         result = db.session.execute(query, query_params).fetchone()
 
-        if result:
-            # Check if the data is NaN and log it
-            if result.o_data is None or math.isnan(result.o_data):
-                logger.warning(f"NaN value encountered for coordinates: lat={lat}, lon={lon}, date={date}, lead_day={lead_day}")
-                return jsonify({'error': 'No valid data found for the given parameters'}), 404
-            
+        if result and result.o_data is not None and not math.isnan(result.o_data):
             response_data = {
                 'latitude': lat,
                 'longitude': lon,
@@ -174,19 +190,243 @@ def get_at_point():
                 'lead_day': lead_day,
                 'overlay': active_overlay
             }
-            if active_overlay == 'speed':
+            
+            # Include depth in response only for overlays that use it
+            if active_overlay in depth_required_overlays:
                 response_data['depth'] = depth
+                
             logger.info(f"Successful query, returning data: {response_data}")
             return jsonify(response_data)
         else:
-            logger.warning("No data found for the given parameters")
-            return jsonify({'error': 'No data found for the given parameters'}), 404
+            logger.warning("No valid data found for the given parameters")
+            return jsonify({'error': 'No valid data found for the given parameters'}), 404
 
     except Exception as e:
         logger.error(f"Unexpected error in get_at_point: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+
+
+
+
+
+
+# @app.route('/get_at_point', methods=['GET'])
+# def get_at_point():
+#     try:
+#         # Log incoming request parameters
+#         logger.info(f"Received request with parameters: {request.args}")
+
+#         lat = request.args.get('lat', type=float)
+#         lon = request.args.get('lon', type=float)
+#         date_str = request.args.get('date')
+#         lead_day = request.args.get('lead_day', type=int)
+#         active_overlay = request.args.get('overlay', type=str)
+#         depth = request.args.get('depth', type=float)
+
+
+#         depth_mapping = {
+#                 0: 0.49399998784065247,
+#                 10: 77.85389709472656,
+#                 22: 643.5667724609375
+#             }
+            
+#         if depth in depth_mapping:
+#             mapped_depth = depth_mapping[depth]
+#             logger.info(f"Mapped depth {depth} to {mapped_depth}")
+#         else:
+#             mapped_depth = depth
+#             logger.info(f"Using original depth value: {depth}")
+            
+#         depth = mapped_depth
+        
+
+#         # Validate required parameters
+#         if lat is None or lon is None:
+#             logger.error("Missing latitude or longitude")
+#             return jsonify({'error': 'Latitude and longitude must be provided'}), 400
+
+#         # Parse the date string if provided
+#         if date_str:
+#             try:
+#                 date = parser.parse(date_str).date()
+#                 logger.info(f"Parsed date: {date}")
+#             except ValueError as e:
+#                 logger.error(f"Error parsing date: {e}")
+#                 return jsonify({'error': f'Invalid date format: {date_str}'}), 400
+#         else:
+#             date = None
+#             logger.info("No date provided, will use most recent data")
+
+#         # If date or lead_day are not provided, get the most recent data
+#         if date is None or lead_day is None:
+#             try:
+#                 most_recent_query = text("""
+#                     SELECT base_date, lead_day 
+#                     FROM ocean_data_sst 
+#                     ORDER BY base_date DESC, lead_day ASC 
+#                     LIMIT 1
+#                 """)
+#                 most_recent = db.session.execute(most_recent_query).fetchone()
+#                 if most_recent:
+#                     date = most_recent.base_date
+#                     lead_day = most_recent.lead_day
+#                     logger.info(f"Using most recent data: date={date}, lead_day={lead_day}")
+#                 else:
+#                     logger.error("No data available in the database")
+#                     return jsonify({'error': 'No data available in the database'}), 404
+#             except Exception as e:
+#                 logger.error(f"Error querying for most recent data: {e}")
+#                 return jsonify({'error': 'Error retrieving most recent data'}), 500
+
+#         # Log the final parameters being used for the query
+#         logger.info(f"Querying with parameters: lat={lat}, lon={lon}, date={date}, lead_day={lead_day}, overlay={active_overlay}, depth={depth}")
+
+#         # Prepare the query based on the active overlay
+#         if active_overlay == 'speed':
+#             if depth is None:
+#                 logger.error("Depth is required for speed overlay")
+#                 return jsonify({'error': 'Depth must be provided for speed overlay'}), 400
+#             query = text(f"SELECT * FROM get_speed_at_point(:lat, :lon, :date, :lead_day, :depth)")
+#             query_params = {'lat': lat, 'lon': lon, 'date': date, 'lead_day': lead_day, 'depth': depth}
+#         else:
+#             query = text(f"SELECT * FROM get_{active_overlay}_at_point(:lat, :lon, :date, :lead_day)")
+#             query_params = {'lat': lat, 'lon': lon, 'date': date, 'lead_day': lead_day}
+
+#         logger.info(f"Executing query: {query}")
+#         result = db.session.execute(query, query_params).fetchone()
+
+#         if result:
+#             # Check if the data is NaN and log it
+#             if result.o_data is None or math.isnan(result.o_data):
+#                 logger.warning(f"NaN value encountered for coordinates: lat={lat}, lon={lon}, date={date}, lead_day={lead_day}")
+#                 return jsonify({'error': 'No valid data found for the given parameters'}), 404
+            
+#             response_data = {
+#                 'latitude': lat,
+#                 'longitude': lon,
+#                 'data': float(result.o_data),
+#                 'matched_latitude': float(result.o_matched_lat),
+#                 'matched_longitude': float(result.o_matched_lon),
+#                 'distance': float(result.o_distance),
+#                 'date': date.isoformat(),
+#                 'lead_day': lead_day,
+#                 'overlay': active_overlay
+#             }
+#             if active_overlay == 'speed':
+#                 response_data['depth'] = depth
+#             logger.info(f"Successful query, returning data: {response_data}")
+#             return jsonify(response_data)
+#         else:
+#             logger.warning("No data found for the given parameters")
+#             return jsonify({'error': 'No data found for the given parameters'}), 404
+
+#     except Exception as e:
+#         logger.error(f"Unexpected error in get_at_point: {str(e)}")
+#         logger.error(traceback.format_exc())
+#         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
     
+
+
+
+# @app.route('/get_all_lead_days', methods=['GET'])
+# def get_all_lead_days():
+#     try:
+#         # Log incoming request parameters
+#         logger.info(f"Received request with parameters: {request.args}")
+
+#         lat = request.args.get('lat', type=float)
+#         lon = request.args.get('lon', type=float)
+#         date_str = request.args.get('base_date')
+#         active_overlay = request.args.get('overlay', type=str)
+#         depth = request.args.get('depth', type=float)
+
+#         # Validate required parameters
+#         if lat is None or lon is None:
+#             logger.error("Missing latitude or longitude")
+#             return jsonify({'error': 'Latitude and longitude must be provided'}), 400
+
+#         # Parse the base date string if provided
+#         if date_str:
+#             try:
+#                 # Parse the base_date string
+#                 base_date = parser.parse(date_str).date()
+#                 logger.info(f"Parsed base_date: {base_date}")
+#             except ValueError as e:
+#                 logger.error(f"Error parsing base_date: {e}")
+#                 return jsonify({'error': f'Invalid date format: {date_str}'}), 400
+#         else:
+#             logger.error("Missing base_date")
+#             return jsonify({'error': 'Base date must be provided'}), 400
+
+#         # Handle depth for speed overlay
+#         if active_overlay == 'speed':
+#             if depth is None:
+#                 logger.error("Depth is required for speed overlay")
+#                 return jsonify({'error': 'Depth must be provided for speed overlay'}), 400
+#             # Convert depth 0 to 0.49399998784065247
+#             depth_mapping = {
+#                 0: 0.49399998784065247,
+#                 10: 77.85389709472656,
+#                 22: 643.5667724609375
+#             }
+            
+#             if depth in depth_mapping:
+#                 mapped_depth = depth_mapping[depth]
+#                 logger.info(f"Mapped depth {depth} to {mapped_depth}")
+#             else:
+#                 mapped_depth = depth
+#                 logger.info(f"Using original depth value: {depth}")
+            
+#             depth = mapped_depth
+#         else:
+#             depth = None
+
+#         # Log the final parameters being used for the query
+#         logger.info(f"Querying with parameters: lat={lat}, lon={lon}, base_date={base_date}, overlay={active_overlay}, depth={depth}")
+
+#         # Prepare the query based on the active overlay
+#         if active_overlay == 'speed':
+#             query = text("SELECT * FROM get_speed_all_lead_days(:lat, :lon, :base_date, :depth)")
+#             query_params = {'lat': lat, 'lon': lon, 'base_date': base_date, 'depth': depth}
+#         else:
+#             query = text(f"SELECT * FROM get_{active_overlay}_all_lead_days(:lat, :lon, :base_date)")
+#             query_params = {'lat': lat, 'lon': lon, 'base_date': base_date}
+
+#         # Execute the query
+#         results = db.session.execute(query, query_params).fetchall()
+
+#         # Check if results are found
+#         if results:
+#             data_values = []
+#             for row in results:
+#                 data_values.append({
+#                     'base_date': row.base_date.isoformat(),
+#                     'lead_day': row.lead_day,
+#                     'data_value': float(row.data_value)
+#                 })
+
+#             response_data = {
+#                 'latitude': lat,
+#                 'longitude': lon,
+#                 'data_values': data_values
+#             }
+#             if active_overlay == 'speed':
+#                 response_data['depth'] = depth
+#             logger.info(f"Successful query, returning data: {response_data}")
+#             return jsonify(response_data)
+#         else:
+#             logger.warning("No data found for the given parameters")
+#             return jsonify({'error': 'No data found for the given parameters'}), 404
+
+#     except Exception as e:
+#         logger.error(f"Unexpected error in get_all_lead_days: {str(e)}")
+#         logger.error(traceback.format_exc())
+#         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+
+
+
+
 
 
 
@@ -196,6 +436,7 @@ def get_all_lead_days():
         # Log incoming request parameters
         logger.info(f"Received request with parameters: {request.args}")
 
+        # Get required parameters
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         date_str = request.args.get('base_date')
@@ -207,10 +448,30 @@ def get_all_lead_days():
             logger.error("Missing latitude or longitude")
             return jsonify({'error': 'Latitude and longitude must be provided'}), 400
 
+        # Define which overlays require depth
+        depth_required_overlays = {'so', 'speed', 'thetao'}
+
+        # Handle depth for overlays that require it
+        if active_overlay in depth_required_overlays:
+            if depth is None:
+                logger.error(f"Depth is required for {active_overlay} overlay")
+                return jsonify({'error': f'Depth must be provided for {active_overlay} overlay'}), 400
+
+            # Apply depth mapping
+            depth_mapping = {
+                0: 0.49399998784065247,
+                10: 77.85389709472656,
+                22: 643.5667724609375
+            }
+            depth = depth_mapping.get(depth, depth)
+            logger.info(f"Using depth value: {depth}")
+        else:
+            depth = None
+            logger.info(f"Depth not required for {active_overlay} overlay")
+
         # Parse the base date string if provided
         if date_str:
             try:
-                # Parse the base_date string
                 base_date = parser.parse(date_str).date()
                 logger.info(f"Parsed base_date: {base_date}")
             except ValueError as e:
@@ -220,41 +481,36 @@ def get_all_lead_days():
             logger.error("Missing base_date")
             return jsonify({'error': 'Base date must be provided'}), 400
 
-        # Handle depth for speed overlay
-        if active_overlay == 'speed':
-            if depth is None:
-                logger.error("Depth is required for speed overlay")
-                return jsonify({'error': 'Depth must be provided for speed overlay'}), 400
-            # Convert depth 0 to 0.49399998784065247
-            depth_mapping = {
-                0: 0.49399998784065247,
-                10: 77.85389709472656,
-                22: 643.5667724609375
-            }
-            
-            if depth in depth_mapping:
-                mapped_depth = depth_mapping[depth]
-                logger.info(f"Mapped depth {depth} to {mapped_depth}")
-            else:
-                mapped_depth = depth
-                logger.info(f"Using original depth value: {depth}")
-            
-            depth = mapped_depth
-        else:
-            depth = None
+        # Map overlay to table name
+        table_mapping = {
+            'sst': 'ocean_data_sst',
+            'zos': 'ocean_data_zos',
+            'so': 'ocean_data_so',
+            'thetao': 'ocean_data_thetao',
+            'speed': 'ocean_data_speed'
+        }
+
+        table_name = table_mapping.get(active_overlay)
+        if not table_name:
+            logger.error(f"Invalid overlay type: {active_overlay}")
+            return jsonify({'error': 'Invalid overlay type'}), 400
 
         # Log the final parameters being used for the query
-        logger.info(f"Querying with parameters: lat={lat}, lon={lon}, base_date={base_date}, overlay={active_overlay}, depth={depth}")
+        logger.info(f"Querying with parameters: table={table_name}, lat={lat}, lon={lon}, "
+                   f"base_date={base_date}, depth={depth}")
 
-        # Prepare the query based on the active overlay
-        if active_overlay == 'speed':
-            query = text("SELECT * FROM get_speed_all_lead_days(:lat, :lon, :base_date, :depth)")
-            query_params = {'lat': lat, 'lon': lon, 'base_date': base_date, 'depth': depth}
-        else:
-            query = text(f"SELECT * FROM get_{active_overlay}_all_lead_days(:lat, :lon, :base_date)")
-            query_params = {'lat': lat, 'lon': lon, 'base_date': base_date}
+        # Prepare and execute the dynamic query
+        query = text("SELECT * FROM get_ocean_data_all_lead_days(:table_name, :lat, :lon, :base_date, :depth)")
+        query_params = {
+            'table_name': table_name,
+            'lat': lat,
+            'lon': lon,
+            'base_date': base_date,
+            'depth': depth
+        }
 
         # Execute the query
+        logger.info(f"Executing query: {query}")
         results = db.session.execute(query, query_params).fetchall()
 
         # Check if results are found
@@ -270,10 +526,14 @@ def get_all_lead_days():
             response_data = {
                 'latitude': lat,
                 'longitude': lon,
+                'overlay': active_overlay,
                 'data_values': data_values
             }
-            if active_overlay == 'speed':
+
+            # Include depth in response only for overlays that use it
+            if active_overlay in depth_required_overlays:
                 response_data['depth'] = depth
+
             logger.info(f"Successful query, returning data: {response_data}")
             return jsonify(response_data)
         else:
@@ -284,14 +544,6 @@ def get_all_lead_days():
         logger.error(f"Unexpected error in get_all_lead_days: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
-
-
-
-
-
-
-
-
 
 
 
