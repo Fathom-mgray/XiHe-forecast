@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Maximize, Loader } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Maximize, Loader, Locate} from 'lucide-react';
 
 const RegionSelector = React.memo(({ 
     onRegionSelect, 

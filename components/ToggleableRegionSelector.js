@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import RegionSelector from './RegionSelector';
+import { LocateOff, LocateFixed } from 'lucide-react';
 
 const ToggleableRegionSelector = ({ depth, 
     activeOverlay, 
@@ -60,7 +61,7 @@ const ToggleableRegionSelector = ({ depth,
                         left: 2px;
                         right: 2px;
                         bottom: 2px;
-                        background: white;
+                        // background: white;
                         border-radius: 9999px;
                         z-index: -1;
                         transition: opacity 0.2s ease;
@@ -74,13 +75,18 @@ const ToggleableRegionSelector = ({ depth,
             <div className="flex justify-end">
                 <button
                     onClick={toggleVisibility}
-                    className="w-48 mt-5 mx-2 px-4 py-2 text-black font-semibold text-sm rounded-full transition-all duration-200 gradient-border-button"
+                    className="mt-5 py-2 px-3 mx-2  text-white font-semibold text-xs rounded-full transition-all duration-200 gradient-border-button flex items-center"
                     style={{
                         boxShadow: isVisible
                             ? '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)' 
                             : '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
                     }}
                 >
+                    {isVisible ? 
+                        <LocateOff className='mr-2 w-5 h-5'/> : 
+                        <LocateFixed className='mr-2 w-5 h-5'/>
+                    }
+
                     {isVisible ? 'Hide' : 'Show'} Region Selector
                 </button>
             </div>

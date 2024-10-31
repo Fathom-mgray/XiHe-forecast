@@ -9,6 +9,21 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+		keyframes: {
+			ripple: {
+			  '0%': {
+				transform: 'scale(1)',
+				opacity: '1'
+			  },
+			  '100%': {
+				transform: 'scale(3)',
+				opacity: '0'
+			  }
+			}
+		  },
+		  animation: {
+			'ripple': 'ripple 1.5s ease-out infinite',
+		  },
   		backgroundImage: {
   			'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
   			'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))'

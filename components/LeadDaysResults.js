@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartLineIcon, Layers, Stairs } from 'lucide-react';
 
 const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, depth, onClose }) => {
     const [activeTab, setActiveTab] = useState('leadDays');
@@ -58,7 +59,7 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="custom-tooltip bg-white p-2 border border-gray-200 rounded shadow">
+                <div className="custom-tooltip bg-gray-500 p-2 rounded shadow text-sm text-gray-200">
                     <p className="label">{`Date: ${payload[0].payload.date}`}</p>
                     <p className="intro">{`Lead Day: ${payload[0].payload.lead_day}`}</p>
                     <p className="intro">{`Value: ${payload[0].payload.value.toFixed(2)} ${overlayConfig[activeOverlay].unit}`}</p>
@@ -70,7 +71,7 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
 
     const renderLeadDaysChart = () => (
         <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart margin={{ top: 5, right: 30, left: 20 }}>
+            <ComposedChart margin={{ top: 10, right: 30, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                     dataKey="date" 
@@ -80,17 +81,18 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
                         position: 'bottom', 
                         offset: -10,
                         fontSize: '0.8rem',
-                        dy: -10
+                        dy: -10,
+                        fill: '#FFFFFF'
                     }}
-                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end' }}
+                    tick={{ fontSize: 10, angle: -45, textAnchor: 'end', fill: '#FFFFFF' }}
                     tickFormatter={(value) => value.slice(5)}
                     height={60}
                 />
                 <YAxis 
                     domain={[minValue, maxValue]} 
-                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12 }}
+                    label={{ value: overlayConfig[activeOverlay].unit, angle: -90, position: 'insideLeft', offset: 15, fontSize: 12, fill: '#FFFFFF' }}
                     tickFormatter={(value) => value.toFixed(2)}
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 10, fill: '#FFFFFF' }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
@@ -117,7 +119,7 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
             <ResponsiveContainer width="100%" height="90%">
                 <ComposedChart
                     layout="vertical"
-                    margin={{ top: 0, right: 0, left: 0, bottom: 10 }}  // Adjusted margins to match lead days chart
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}  // Adjusted margins to match lead days chart
                 >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
@@ -127,11 +129,13 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
                             value: overlayConfig[activeOverlay].unit,
                             position: 'top',
                             offset: -20,  // Adjusted offset
-                            fontSize: '0.8rem' 
+                            fontSize: '0.8rem', 
+                            dy:-10,
+                            fill: '#FFFFFF'
                         }}
                         orientation="top"
                         tickFormatter={(value) => value.toFixed(2)}
-                        tick={{ fontSize: 10 }} 
+                        tick={{ fontSize: 10, fill: '#FFFFFF' }} 
                     />
                     <YAxis 
                         dataKey="depth"
@@ -142,15 +146,16 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
                             angle: -90, 
                             position: 'insideLeft', 
                             offset: 15,  
-                            fontSize: 12  
+                            fontSize: 12 ,
+                            fill: '#FFFFFF' 
                         }}
-                        tick={{ fontSize: 10 }}  
+                        tick={{ fontSize: 10, fill: '#FFFFFF' }}  
                     />
                     <Tooltip 
                         content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                                 return (
-                                    <div className="bg-white p-2 border rounded shadow">
+                                    <div className="p-2 rounded shadow text-sm text-gray-200 bg-gray-500">
                                         <p>Depth: {payload[0].payload.depth}m</p>
                                         <p>Value: {payload[0].payload.value.toFixed(2)} {overlayConfig[activeOverlay].unit}</p>
                                     </div>
@@ -173,7 +178,7 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
     };
     return (
         <div 
-            className={`bg-white bg-opacity-100 rounded-t-lg shadow-lg transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0' : 'translate-y-full'}`} 
+            className={`bg-gray-700 bg-opacity-100  shadow-lg transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0' : 'translate-y-full'}`} 
             style={{ 
                 position: 'fixed', 
                 bottom: 0, 
@@ -186,41 +191,44 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
             }}
         >
             <div className="flex justify-between items-center p-2">
-                {hasDepthData && (
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={() => setActiveTab('leadDays')}
-                            className={`px-4 py-1 rounded-t-lg text-sm font-medium transition-colors duration-200 ${
-                                activeTab === 'leadDays' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Lead Days
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('depth')}
-                            className={`px-4 py-1 rounded-t-lg text-sm font-medium transition-colors duration-200 ${
-                                activeTab === 'depth' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Depth Profile
-                        </button>
-                    </div>
-                )}
-                <button 
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                </button>
-            </div>
+    <div className="flex gap-2">
+        <button 
+            onClick={() => setActiveTab('leadDays')}
+            className={`px-4 py-1 text-sm font-medium flex items-center transition-colors duration-200 ${
+                activeTab === 'leadDays' 
+                    ? 'border-b-2 border-gray-200 text-gray-200' 
+                    : 'border-b-2 border-transparent text-gray-200 hover:text-gray-400'
+            }`}
+        >
+            <ChartLineIcon className="w-4 h-4 mr-2" />
+            <span>Lead Days</span>
+        </button>
+        <button 
+            onClick={() => hasDepthData && setActiveTab('depth')}
+            className={`px-4 py-1 text-sm flex items-center font-medium transition-colors duration-200 ${
+                activeTab === 'depth' 
+                ? 'border-b-2 border-gray-200 text-gray-200' 
+                : 'border-b-2 border-transparent text-gray-200 hover:text-gray-400'
+            } ${!hasDepthData ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!hasDepthData}
+            title={!hasDepthData ? "Depth data not available" : ""}
+        >
+            <Layers className="w-4 h-4 mr-2" />
+            Depth Profile
+        </button>
+    </div>
+    <button 
+        onClick={onClose}
+        className="text-white hover:text-gray-200 focus:outline-none"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+    </button>
+</div>
+
             <div className="flex flex-1 overflow-hidden">
-                <div className="w-4/5 pr-4">
+                <div className="w-4/5 pr-4 mt-4">
                     {activeTab === 'leadDays' ? (
                         chartData.length > 0 ? renderLeadDaysChart() : (
                             <div className="h-full flex items-center justify-center text-sm">No data available</div>
@@ -231,9 +239,9 @@ const LeadDaysResults = ({ results, depthProfile, activeOverlay, isVisible, dept
                         )
                     )}
                 </div>
-                <div className="w-1/5 pl-4 border-l overflow-y-auto">
-                    <h3 className="text-lg font-bold mb-2">About</h3>
-                    <ul className="text-xs space-y-2">
+                <div className="w-1/5 pl-4 border-l overflow-y-auto text-white">
+                    <h3 className="text-2xl font-bold mb-2">About</h3>
+                    <ul className="text-xs space-y-2 text-gray-300">
                         <li>
                             <span className="font-medium">Overlay:</span> {overlayConfig[activeOverlay].name}
                         </li>

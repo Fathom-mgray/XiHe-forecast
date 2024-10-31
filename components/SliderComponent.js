@@ -150,7 +150,7 @@ const SliderComponent = ({ onDateChange, onBaseDateChange, onDepthChange, active
         transition-all duration-300 ease-in-out
          p-4  // Added background and padding for visibility
     `}>
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-2 w-[20vh]">
                 <div className={`
                     transition-all duration-300 ease-in-out
                     ${showDepth 

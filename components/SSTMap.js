@@ -512,6 +512,7 @@ const SSTMap = () => {
         activeOverlay={activeOverlay}
         onToggleLeadDaysResults={handleToggleLeadDaysResults}
         depth={depth}
+        isVisible = {showLeadDaysResults}
     />
 {/* )} */}
 

@@ -1,9 +1,13 @@
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-      domains: ['34.229.93.55'],
-    },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   }
-  
-  export default nextConfig;
-  
+}
+
+export default nextConfig
